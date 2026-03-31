@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Pamela Leiva — Pide su show · FansPass</title>
+  <script src="https://sdk.mercadopago.com/js/v2"></script>
 <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
@@ -59,6 +60,13 @@
     .live-dot { display: flex; align-items: center; gap: 5px; font-size: 0.7rem; color: #4caf50; font-weight: 600; }
     .live-dot::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: #4caf50; animation: pulse-green 1.5s infinite; }
     @keyframes pulse-green { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.5;transform:scale(1.3)} }
+
+    /* MERCADOPAGO FIELDS */
+    .mp-field { background: var(--surface2); border: 1.5px solid var(--border); border-radius: var(--radius); height: 48px; padding: 0 14px; transition: border-color .2s; }
+    .mp-field iframe { height: 100% !important; }
+    #form-checkout__cardholderName, #form-checkout__identificationNumber { background: var(--surface2); border: 1.5px solid var(--border); border-radius: var(--radius); padding: 12px 14px; font-size: 0.95rem; color: var(--text); width: 100%; outline: none; transition: border-color .2s; }
+    #form-checkout__cardholderName:focus, #form-checkout__identificationNumber:focus { border-color: var(--accent); }
+    #form-checkout__identificationType { background: var(--surface2); border: 1.5px solid var(--border); border-radius: var(--radius); padding: 12px 14px; font-size: 0.95rem; color: var(--text); width: 100%; outline: none; }
 
     /* QUOTE */
     .artist-quote { border-left: 3px solid var(--accent); padding: 14px 18px; margin: 24px 0; background: rgba(232,255,0,0.04); border-radius: 0 var(--radius) var(--radius) 0; position: relative; }
@@ -312,28 +320,81 @@
     </div>
 
     <!-- STEP 4: Confirmación + envío -->
-    <div class="form-step" id="step4">
-      <h2 id="step4-title">Confirma tu petición</h2>
-      <p class="subtitle" id="step4-subtitle">Revisa los datos antes de enviar.</p>
+    <!-- STEP 4a: Confirmación plan Free -->
+    <div class="form-step" id="step4-free">
+      <h2>Confirma tu petición</h2>
+      <p class="subtitle">Revisa los datos antes de enviar.</p>
       <div style="background:var(--surface2);border-radius:var(--radius);padding:20px;margin-bottom:20px;">
         <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:0.9rem;">
           <span style="color:var(--muted)">Artista</span><span style="font-weight:600">Pamela Leiva</span>
         </div>
-        <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:0.9rem;">
-          <span style="color:var(--muted)">Ciudad</span><span id="confirm-ciudad-display" style="font-weight:600"></span>
-        </div>
         <div style="display:flex;justify-content:space-between;padding:8px 0;font-size:0.9rem;">
-          <span style="color:var(--muted)">Plan</span><span id="confirm-plan-display" style="font-weight:600"></span>
+          <span style="color:var(--muted)">Ciudad</span><span id="free-ciudad-display" style="font-weight:600"></span>
         </div>
       </div>
-      <div id="premium-notice" style="display:none;background:rgba(232,255,0,0.06);border:1px solid rgba(232,255,0,0.25);border-radius:var(--radius);padding:14px;margin-bottom:20px;font-size:0.85rem;line-height:1.6;">
-        ⭐ <strong>Plan Premium $2.990 CLP</strong> — Al confirmar, serás contactado para completar el pago y asegurar tu acceso a preventa exclusiva.
+      <div style="background:rgba(232,255,0,0.04);border:1px solid rgba(232,255,0,0.15);border-radius:var(--radius);padding:14px;margin-bottom:20px;font-size:0.82rem;color:var(--muted);line-height:1.6;">
+        ⭐ Actualiza a <strong style="color:var(--text)">Premium $2.990</strong> y obtén acceso exclusivo a preventa.
       </div>
-      <div id="free-upsell" style="display:none;background:rgba(232,255,0,0.04);border:1px solid rgba(232,255,0,0.15);border-radius:var(--radius);padding:14px;margin-bottom:20px;font-size:0.82rem;color:var(--muted);line-height:1.6;">
-        ⭐ Actualiza a <strong style="color:var(--text)">Premium</strong> por $2.990 y obtén acceso exclusivo a preventa.
-      </div>
-      <button class="btn btn-accent" id="submit-btn" onclick="submitForm()">Enviar petición →</button>
+      <button class="btn btn-accent" id="submit-free-btn" onclick="submitFree()">Enviar petición →</button>
       <button class="btn btn-outline" onclick="goStep(3)">← Volver</button>
+    </div>
+
+    <!-- STEP 4b: Pago Premium con MercadoPago -->
+    <div class="form-step" id="step4-premium">
+      <h2>Paga tu petición</h2>
+      <p class="subtitle">Pago seguro · No reembolsable</p>
+
+      <div style="background:var(--surface2);border-radius:var(--radius);padding:16px 20px;margin-bottom:20px;display:flex;justify-content:space-between;align-items:center;">
+        <div>
+          <div style="font-weight:700;font-size:0.95rem;">Pamela Leiva · <span id="mp-ciudad">—</span></div>
+          <div style="font-size:0.78rem;color:var(--muted);margin-top:2px;">⭐ Plan Premium · Acceso a preventa</div>
+        </div>
+        <div style="font-size:1.4rem;font-weight:900;color:var(--accent);">$2.990</div>
+      </div>
+
+      <form id="form-checkout" onsubmit="submitPayment(event)">
+        <div class="field">
+          <label>Número de tarjeta</label>
+          <div id="form-checkout__cardNumber" class="mp-field"></div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+          <div class="field">
+            <label>Vencimiento</label>
+            <div id="form-checkout__expirationDate" class="mp-field"></div>
+          </div>
+          <div class="field">
+            <label>CVV</label>
+            <div id="form-checkout__securityCode" class="mp-field"></div>
+          </div>
+        </div>
+        <div class="field">
+          <label>Nombre del titular</label>
+          <input type="text" id="form-checkout__cardholderName" placeholder="Como aparece en la tarjeta" />
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+          <div class="field">
+            <label>Tipo documento</label>
+            <select id="form-checkout__identificationType"></select>
+          </div>
+          <div class="field">
+            <label>Número documento</label>
+            <input type="text" id="form-checkout__identificationNumber" placeholder="Sin puntos ni guión" />
+          </div>
+        </div>
+        <select id="form-checkout__issuer" style="display:none;"></select>
+        <select id="form-checkout__installments" style="display:none;"></select>
+
+        <div id="mp-error" style="color:var(--error);font-size:0.82rem;margin-bottom:12px;display:none;padding:10px;background:rgba(255,77,77,0.08);border-radius:8px;"></div>
+
+        <button type="submit" class="btn btn-accent" id="mp-pay-btn">Pagar $2.990 →</button>
+        <button type="button" class="btn btn-outline" onclick="goStep(3)">← Volver</button>
+
+        <div class="secure-badge" style="margin-top:16px;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          Pago seguro · MercadoPago
+        </div>
+        <div class="legal">Al pagar aceptas los <a href="#">Términos</a>. No reembolsable.</div>
+      </form>
     </div>
 
     <!-- STEP 5: Éxito -->
@@ -354,19 +415,25 @@
 </main>
 
 <script>
+  const MP_PUBLIC_KEY = 'APP_USR-054effb9-5691-4ec2-a27a-c56ca01f0ec6';
+  const MP_BACKEND_URL = 'REEMPLAZAR_CON_URL_BACKEND'; // Supabase Edge Function
+
   let currentStep = 1;
   let selectedPlan = 'premium';
+  let mpCardForm = null;
 
-  // Init: muestra RUT porque premium es el default
+  // Init
   document.addEventListener('DOMContentLoaded', () => selectPlan('premium'));
 
   function goStep(n) {
-    document.getElementById('step' + currentStep).classList.remove('active');
+    // Oculta el step actual (puede ser step1-5, step4-free o step4-premium)
+    document.querySelectorAll('.form-step').forEach(s => s.classList.remove('active'));
     currentStep = n;
-    document.getElementById('step' + currentStep).classList.add('active');
+    const target = document.getElementById('step' + n) || document.getElementById('step' + n + '-free');
+    if (target) target.classList.add('active');
     for (let i = 1; i <= 4; i++) {
       const dot = document.getElementById('dot' + i);
-      if (dot) dot.classList.toggle('done', i <= currentStep);
+      if (dot) dot.classList.toggle('done', i <= n);
     }
     window.scrollTo({ top: document.querySelector('.form-card').offsetTop - 80, behavior: 'smooth' });
   }
@@ -401,38 +468,114 @@
   function goStep4() {
     if (selectedPlan === 'premium' && !validate(['rut'])) return;
     const ciudad = document.getElementById('ciudad').value;
-    document.getElementById('confirm-ciudad-display').textContent = ciudad;
-    document.getElementById('confirm-plan-display').textContent = selectedPlan === 'premium' ? '⭐ Premium $2.990' : 'Gratuito';
-    document.getElementById('premium-notice').style.display = selectedPlan === 'premium' ? 'block' : 'none';
-    document.getElementById('free-upsell').style.display = selectedPlan === 'free' ? 'block' : 'none';
-    goStep(4);
+
+    if (selectedPlan === 'free') {
+      document.getElementById('free-ciudad-display').textContent = ciudad;
+      document.querySelectorAll('.form-step').forEach(s => s.classList.remove('active'));
+      document.getElementById('step4-free').classList.add('active');
+      for (let i = 1; i <= 4; i++) { const d = document.getElementById('dot'+i); if(d) d.classList.add('done'); }
+      window.scrollTo({ top: document.querySelector('.form-card').offsetTop - 80, behavior: 'smooth' });
+    } else {
+      document.getElementById('mp-ciudad').textContent = ciudad;
+      document.querySelectorAll('.form-step').forEach(s => s.classList.remove('active'));
+      document.getElementById('step4-premium').classList.add('active');
+      for (let i = 1; i <= 4; i++) { const d = document.getElementById('dot'+i); if(d) d.classList.add('done'); }
+      window.scrollTo({ top: document.querySelector('.form-card').offsetTop - 80, behavior: 'smooth' });
+      mountMercadoPago();
+    }
   }
 
-  async function submitForm() {
-    const btn = document.getElementById('submit-btn');
+  function mountMercadoPago() {
+    if (mpCardForm) return; // ya montado
+    if (!window.MercadoPago || MP_PUBLIC_KEY.includes('REEMPLAZAR')) {
+      // Modo demo
+      document.getElementById('form-checkout__cardNumber').innerHTML =
+        '<div style="padding:12px;font-size:0.8rem;color:var(--muted)">🔑 Configura tu Public Key de MercadoPago para activar el pago real.</div>';
+      return;
+    }
+    const mp = new MercadoPago(MP_PUBLIC_KEY, { locale: 'es-CL' });
+    mpCardForm = mp.cardForm({
+      amount: '2990',
+      iframe: true,
+      form: {
+        id: 'form-checkout',
+        cardNumber:         { id: 'form-checkout__cardNumber',         placeholder: '0000 0000 0000 0000' },
+        expirationDate:     { id: 'form-checkout__expirationDate',     placeholder: 'MM/AA' },
+        securityCode:       { id: 'form-checkout__securityCode',       placeholder: 'CVV' },
+        cardholderName:     { id: 'form-checkout__cardholderName' },
+        issuer:             { id: 'form-checkout__issuer' },
+        installments:       { id: 'form-checkout__installments' },
+        identificationType: { id: 'form-checkout__identificationType' },
+        identificationNumber: { id: 'form-checkout__identificationNumber' },
+      },
+      callbacks: {
+        onFormMounted: (err) => { if (err) console.warn('MP form error:', err); },
+        onSubmit: handleMPSubmit,
+        onFetchingResource: () => {},
+      },
+    });
+  }
+
+  async function handleMPSubmit(event) {
+    event.preventDefault();
+    const btn = document.getElementById('mp-pay-btn');
+    const errorEl = document.getElementById('mp-error');
+    btn.textContent = 'Procesando...';
+    btn.disabled = true;
+    errorEl.style.display = 'none';
+
+    const { token, issuerId, paymentMethodId, installments, identificationNumber, identificationType } = mpCardForm.getCardFormData();
+    const email = document.getElementById('email').value.trim();
+    const nombre = document.getElementById('nombre').value.trim();
+    const ciudad = document.getElementById('ciudad').value;
+    const rut = document.getElementById('rut').value.trim();
+
+    try {
+      const res = await fetch(MP_BACKEND_URL + '/process-payment-mp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token, issuerId, paymentMethodId, installments, identificationNumber, identificationType, email, nombre, ciudad, rut, amount: 2990 })
+      });
+      const data = await res.json();
+      if (data.status === 'approved') {
+        await submitToJotform('premium');
+        showSuccess('premium');
+      } else {
+        throw new Error(data.status_detail || 'Pago rechazado');
+      }
+    } catch (e) {
+      errorEl.textContent = '⚠️ ' + (e.message || 'Error al procesar el pago. Intenta nuevamente.');
+      errorEl.style.display = 'block';
+      btn.textContent = 'Pagar $2.990 →';
+      btn.disabled = false;
+    }
+  }
+
+  function submitPayment(e) {
+    e.preventDefault();
+    if (!mpCardForm) return;
+    mpCardForm.submit();
+  }
+
+  async function submitFree() {
+    const btn = document.getElementById('submit-free-btn');
     btn.textContent = 'Enviando...';
     btn.disabled = true;
+    await submitToJotform('free');
+    showSuccess('free');
+  }
 
+  async function submitToJotform(plan) {
     const nombreCompleto = document.getElementById('nombre').value.trim();
     const partes = nombreCompleto.split(' ');
     const firstName = partes[0] || '';
     const lastName  = partes.slice(1).join(' ') || '-';
     const email  = document.getElementById('email').value.trim();
     const ciudad = document.getElementById('ciudad').value;
-    const rut    = (document.getElementById('rut')?.value || '').trim();
-    const tipo   = selectedPlan === 'premium'
+    const tipo   = plan === 'premium'
       ? 'Premium $2.990 CLP — Quiero preventa exclusiva garantizada'
       : 'Gratis — Solo quiero registrar mi petición';
-
-    const data = new FormData();
-    data.append('q1_nombreCompleto[first]', firstName);
-    data.append('q1_nombreCompleto[last]', lastName);
-    data.append('q2_correoElectronico', email);
-    data.append('q3_enQue', ciudad);
-    data.append('q4_tipoDe', tipo);
-
     try {
-      // JotForm acepta submissions vía su API con CORS habilitado
       const params = new URLSearchParams();
       params.append('submission[1_first]', firstName);
       params.append('submission[1_last]', lastName);
@@ -440,27 +583,28 @@
       params.append('submission[3]', ciudad);
       params.append('submission[4]', tipo);
       await fetch('https://api.jotform.com/form/260896767288682/submissions?apiKey=6d3de78111f0fa04f7e03230e89358b5', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: params.toString()
+        method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: params.toString()
       });
     } catch(e) { console.warn('JotForm:', e); }
+  }
 
-    // Mostrar éxito
+  function showSuccess(plan) {
+    const email  = document.getElementById('email').value.trim();
+    const ciudad = document.getElementById('ciudad').value;
     document.getElementById('confirm-email').textContent = email;
     document.getElementById('confirm-ciudad').textContent = ciudad;
-    if (selectedPlan === 'premium') {
+    if (plan === 'premium') {
       document.getElementById('success-icon').textContent = '🎉';
       document.getElementById('success-plan-badge-wrap').innerHTML = '<div class="success-plan-badge">⭐ Plan Premium</div>';
       document.getElementById('success-title').textContent = '¡Petición Premium registrada!';
-      document.getElementById('success-msg').textContent = 'Te contactaremos pronto para el pago y tu acceso exclusivo a preventa.';
+      document.getElementById('success-msg').textContent = 'Pago confirmado. Te avisaremos cuando el show se confirme y tendrás acceso a preventa exclusiva.';
     } else {
       document.getElementById('success-icon').textContent = '✅';
       document.getElementById('success-plan-badge-wrap').innerHTML = '';
       document.getElementById('success-title').textContent = '¡Petición registrada!';
       document.getElementById('success-msg').textContent = 'Si el show se concreta, te avisaremos por email.';
     }
-    document.getElementById('step4').classList.remove('active');
+    document.querySelectorAll('.form-step').forEach(s => s.classList.remove('active'));
     document.getElementById('step5').classList.add('active');
   }
 
