@@ -432,8 +432,17 @@
     data.append('q4_tipoDe', tipo);
 
     try {
-      await fetch('https://submit.jotform.com/submit/260896767288682/', {
-        method: 'POST', mode: 'no-cors', body: data
+      // JotForm acepta submissions vía su API con CORS habilitado
+      const params = new URLSearchParams();
+      params.append('submission[1_first]', firstName);
+      params.append('submission[1_last]', lastName);
+      params.append('submission[2]', email);
+      params.append('submission[3]', ciudad);
+      params.append('submission[4]', tipo);
+      await fetch('https://api.jotform.com/form/260896767288682/submissions?apiKey=6d3de78111f0fa04f7e03230e89358b5', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: params.toString()
       });
     } catch(e) { console.warn('JotForm:', e); }
 
