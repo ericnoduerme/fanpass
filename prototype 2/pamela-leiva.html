@@ -4,8 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Pamela Leiva — Pide su show · FansPass</title>
-  <script src="https://js.stripe.com/v3/"></script>
-  <style>
+<style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
       --bg: #0a0a0a; --surface: #141414; --surface2: #1e1e1e;
@@ -67,7 +66,7 @@
     .quote-text { font-size: 0.95rem; line-height: 1.65; color: var(--text); padding-left: 20px; font-style: italic; margin-bottom: 10px; }
     .quote-author { font-size: 0.78rem; font-weight: 700; color: var(--accent); padding-left: 20px; letter-spacing: 0.3px; }
 
-    .fan-feed { display: flex; flex-direction: column; gap: 8px; }
+    .fan-feed { display: flex; flex-direction: column; gap: 8px; max-height: 420px; overflow-y: auto; scroll-behavior: smooth; }
     .fan-voice {
       background: var(--surface); border: 1px solid var(--border);
       border-radius: var(--radius); padding: 13px 15px;
@@ -312,50 +311,29 @@
       <button class="btn btn-outline" onclick="goStep(2)">← Volver</button>
     </div>
 
-    <!-- STEP 4: Pago o confirmación -->
+    <!-- STEP 4: Confirmación + envío -->
     <div class="form-step" id="step4">
-
-      <!-- PREMIUM: pago -->
-      <div id="payment-section">
-        <h2>Paga tu petición</h2>
-        <p class="subtitle">Pago seguro con tarjeta. No reembolsable.</p>
-        <div class="price-display">
-          <div class="price-left">
-            <strong>Pamela Leiva</strong>
-            <span id="resumen-ciudad">—</span>
-          </div>
-          <div class="price-amount">$2.990</div>
+      <h2 id="step4-title">Confirma tu petición</h2>
+      <p class="subtitle" id="step4-subtitle">Revisa los datos antes de enviar.</p>
+      <div style="background:var(--surface2);border-radius:var(--radius);padding:20px;margin-bottom:20px;">
+        <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:0.9rem;">
+          <span style="color:var(--muted)">Artista</span><span style="font-weight:600">Pamela Leiva</span>
         </div>
-        <div id="payment-element" style="margin-bottom:20px;"></div>
-        <div id="payment-error" style="color:var(--error);font-size:0.82rem;margin-bottom:12px;display:none;"></div>
-        <button class="btn btn-accent" id="pay-btn" onclick="processPayment()">Pagar $2.990 →</button>
-        <button class="btn btn-outline" onclick="goStep(3)">← Volver</button>
-        <div class="secure-badge">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-          Pago seguro · Stripe
+        <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:0.9rem;">
+          <span style="color:var(--muted)">Ciudad</span><span id="confirm-ciudad-display" style="font-weight:600"></span>
         </div>
-        <div class="legal">Al pagar aceptas los <a href="#">Términos y condiciones</a>. El pago no es reembolsable y no garantiza la realización del evento.</div>
+        <div style="display:flex;justify-content:space-between;padding:8px 0;font-size:0.9rem;">
+          <span style="color:var(--muted)">Plan</span><span id="confirm-plan-display" style="font-weight:600"></span>
+        </div>
       </div>
-
-      <!-- FREE: confirmación -->
-      <div id="free-confirm-section" style="display:none">
-        <h2>Confirma tu petición</h2>
-        <p class="subtitle">Revisa los datos antes de enviar.</p>
-        <div style="background:var(--surface2);border-radius:var(--radius);padding:20px;margin-bottom:20px;">
-          <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:0.9rem;">
-            <span style="color:var(--muted)">Artista</span><span style="font-weight:600">Pamela Leiva</span>
-          </div>
-          <div style="display:flex;justify-content:space-between;padding:8px 0;font-size:0.9rem;">
-            <span style="color:var(--muted)">Ciudad</span><span id="free-ciudad" style="font-weight:600"></span>
-          </div>
-        </div>
-        <div style="background:rgba(232,255,0,0.04);border:1px solid rgba(232,255,0,0.2);border-radius:var(--radius);padding:14px;margin-bottom:20px;font-size:0.82rem;color:var(--muted);line-height:1.6;">
-          ⭐ Actualiza a <strong style="color:var(--text)">Premium</strong> por $2.990 y obtén acceso exclusivo a preventa.
-        </div>
-        <button class="btn btn-accent" onclick="confirmFree()">Enviar petición →</button>
-        <button class="btn btn-outline" onclick="goStep(3)">← Volver</button>
+      <div id="premium-notice" style="display:none;background:rgba(232,255,0,0.06);border:1px solid rgba(232,255,0,0.25);border-radius:var(--radius);padding:14px;margin-bottom:20px;font-size:0.85rem;line-height:1.6;">
+        ⭐ <strong>Plan Premium $2.990 CLP</strong> — Al confirmar, serás contactado para completar el pago y asegurar tu acceso a preventa exclusiva.
       </div>
-
+      <div id="free-upsell" style="display:none;background:rgba(232,255,0,0.04);border:1px solid rgba(232,255,0,0.15);border-radius:var(--radius);padding:14px;margin-bottom:20px;font-size:0.82rem;color:var(--muted);line-height:1.6;">
+        ⭐ Actualiza a <strong style="color:var(--text)">Premium</strong> por $2.990 y obtén acceso exclusivo a preventa.
+      </div>
+      <button class="btn btn-accent" id="submit-btn" onclick="submitForm()">Enviar petición →</button>
+      <button class="btn btn-outline" onclick="goStep(3)">← Volver</button>
     </div>
 
     <!-- STEP 5: Éxito -->
@@ -366,9 +344,9 @@
         <h2 id="success-title">¡Petición registrada!</h2>
         <p id="success-msg">Tu petición fue recibida. Si el show se concreta, te avisaremos por email.</p>
         <div class="success-detail">
-          📧 Enviamos confirmación a <strong id="confirm-email"></strong> por el show de <strong>Pamela Leiva</strong> en <strong id="confirm-ciudad"></strong>.
+          📧 Confirmación enviada a <strong id="confirm-email"></strong> — show de <strong>Pamela Leiva</strong> en <strong id="confirm-ciudad"></strong>.
         </div>
-        <a href="index.html"><button class="btn btn-accent">Pedir otro show</button></a>
+        <a href="index.html"><button class="btn btn-accent" style="margin-top:20px">Pedir otro show</button></a>
       </div>
     </div>
 
@@ -376,38 +354,21 @@
 </main>
 
 <script>
-  const STRIPE_PUBLISHABLE_KEY = 'pk_test_REEMPLAZAR_CON_TU_CLAVE';
-  const SUPABASE_FUNCTIONS_URL = 'https://REEMPLAZAR.supabase.co/functions/v1';
-
-  const stripe = Stripe(STRIPE_PUBLISHABLE_KEY);
-  let elements = null;
   let currentStep = 1;
   let selectedPlan = 'premium';
 
-  // Contador en vivo
-  let petCount = 228;
-  const petEl = document.getElementById('stat-peticiones');
-  function tickPeticiones() {
-    petCount++;
-    if (petEl) petEl.textContent = petCount;
-    setTimeout(tickPeticiones, Math.random() * 10000 + 6000);
-  }
-  setTimeout(tickPeticiones, Math.random() * 8000 + 4000);
-
-  function selectPlan(plan) {
-    selectedPlan = plan;
-    document.getElementById('plan-free').classList.toggle('selected', plan === 'free');
-    document.getElementById('plan-premium').classList.toggle('selected', plan === 'premium');
-    document.getElementById('rut-field').style.display = plan === 'premium' ? 'block' : 'none';
-  }
+  // Init: muestra RUT porque premium es el default
+  document.addEventListener('DOMContentLoaded', () => selectPlan('premium'));
 
   function goStep(n) {
     document.getElementById('step' + currentStep).classList.remove('active');
     currentStep = n;
     document.getElementById('step' + currentStep).classList.add('active');
     for (let i = 1; i <= 4; i++) {
-      document.getElementById('dot' + i).classList.toggle('done', i <= currentStep);
+      const dot = document.getElementById('dot' + i);
+      if (dot) dot.classList.toggle('done', i <= currentStep);
     }
+    window.scrollTo({ top: document.querySelector('.form-card').offsetTop - 80, behavior: 'smooth' });
   }
 
   function validate(ids) {
@@ -420,89 +381,89 @@
     return ok;
   }
 
-  // Step 1 → 2: valida nombre + email
   function goStep2() {
     if (!validate(['nombre', 'email'])) return;
     goStep(2);
   }
 
-  // Step 2 → 3: valida ciudad
   function goStep3() {
     if (!validate(['ciudad'])) return;
     goStep(3);
   }
 
-  // Step 3 → 4: valida plan (y RUT si es premium), muestra sección correcta
+  function selectPlan(plan) {
+    selectedPlan = plan;
+    document.getElementById('plan-free').classList.toggle('selected', plan === 'free');
+    document.getElementById('plan-premium').classList.toggle('selected', plan === 'premium');
+    document.getElementById('rut-field').style.display = plan === 'premium' ? 'block' : 'none';
+  }
+
   function goStep4() {
     if (selectedPlan === 'premium' && !validate(['rut'])) return;
     const ciudad = document.getElementById('ciudad').value;
-    if (selectedPlan === 'premium') {
-      document.getElementById('payment-section').style.display = 'block';
-      document.getElementById('free-confirm-section').style.display = 'none';
-      document.getElementById('resumen-ciudad').textContent = ciudad;
-    } else {
-      document.getElementById('payment-section').style.display = 'none';
-      document.getElementById('free-confirm-section').style.display = 'block';
-      document.getElementById('free-ciudad').textContent = ciudad;
-    }
+    document.getElementById('confirm-ciudad-display').textContent = ciudad;
+    document.getElementById('confirm-plan-display').textContent = selectedPlan === 'premium' ? '⭐ Premium $2.990' : 'Gratuito';
+    document.getElementById('premium-notice').style.display = selectedPlan === 'premium' ? 'block' : 'none';
+    document.getElementById('free-upsell').style.display = selectedPlan === 'free' ? 'block' : 'none';
     goStep(4);
-    if (selectedPlan === 'premium') mountStripeElement();
   }
 
-  async function mountStripeElement() {
-    const nombre = document.getElementById('nombre').value;
-    const email  = document.getElementById('email').value;
-    const rut    = document.getElementById('rut').value;
-    const ciudad = document.getElementById('ciudad').value;
-    try {
-      const res = await fetch(`${SUPABASE_FUNCTIONS_URL}/create-payment-intent`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ nombre, email, rut, artista: 'Pamela Leiva', ciudad }),
-      });
-      const { clientSecret, error } = await res.json();
-      if (error) throw new Error(error);
-      elements = stripe.elements({ clientSecret, appearance: { theme: 'night', variables: { colorPrimary: '#e8ff00', colorBackground: '#1e1e1e', colorText: '#f0f0f0', borderRadius: '12px' } } });
-      elements.create('payment').mount('#payment-element');
-    } catch {
-      document.getElementById('payment-element').innerHTML =
-        '<p style="color:var(--muted);font-size:0.82rem;padding:12px 0">⚠️ Modo demo — configura tus claves para activar Stripe real.</p>';
-    }
-  }
-
-  async function processPayment() {
-    const btn = document.getElementById('pay-btn');
-    const errorEl = document.getElementById('payment-error');
-    errorEl.style.display = 'none';
-    btn.textContent = 'Procesando...';
+  async function submitForm() {
+    const btn = document.getElementById('submit-btn');
+    btn.textContent = 'Enviando...';
     btn.disabled = true;
-    if (!elements) { setTimeout(() => showSuccess('premium'), 1500); return; }
-    const { error } = await stripe.confirmPayment({ elements, confirmParams: { return_url: window.location.origin + '/success.html' } });
-    if (error) {
-      errorEl.textContent = error.message;
-      errorEl.style.display = 'block';
-      btn.textContent = 'Pagar $2.990 →';
-      btn.disabled = false;
-    }
-  }
 
-  function confirmFree() { showSuccess('free'); }
+    const nombreCompleto = document.getElementById('nombre').value.trim();
+    const partes = nombreCompleto.split(' ');
+    const firstName = partes[0] || '';
+    const lastName  = partes.slice(1).join(' ') || '-';
+    const email  = document.getElementById('email').value.trim();
+    const ciudad = document.getElementById('ciudad').value;
+    const rut    = (document.getElementById('rut')?.value || '').trim();
+    const tipo   = selectedPlan === 'premium'
+      ? 'Premium $2.990 CLP — Quiero preventa exclusiva garantizada'
+      : 'Gratis — Solo quiero registrar mi petición';
 
-  function showSuccess(plan) {
-    document.getElementById('confirm-email').textContent = document.getElementById('email').value;
-    document.getElementById('confirm-ciudad').textContent = document.getElementById('ciudad').value;
-    if (plan === 'premium') {
+    const data = new FormData();
+    data.append('q1_nombreCompleto[first]', firstName);
+    data.append('q1_nombreCompleto[last]', lastName);
+    data.append('q2_correoElectronico', email);
+    data.append('q3_enQue', ciudad);
+    data.append('q4_tipoDe', tipo);
+
+    try {
+      await fetch('https://submit.jotform.com/submit/260896767288682/', {
+        method: 'POST', mode: 'no-cors', body: data
+      });
+    } catch(e) { console.warn('JotForm:', e); }
+
+    // Mostrar éxito
+    document.getElementById('confirm-email').textContent = email;
+    document.getElementById('confirm-ciudad').textContent = ciudad;
+    if (selectedPlan === 'premium') {
       document.getElementById('success-icon').textContent = '🎉';
-      document.getElementById('success-plan-badge-wrap').innerHTML = '<div class="success-plan-badge">⭐ Plan Premium activado</div>';
+      document.getElementById('success-plan-badge-wrap').innerHTML = '<div class="success-plan-badge">⭐ Plan Premium</div>';
       document.getElementById('success-title').textContent = '¡Petición Premium registrada!';
-      document.getElementById('success-msg').textContent = 'Eres de los primeros en acceder a la preventa si el show se concreta. Te avisaremos por email.';
+      document.getElementById('success-msg').textContent = 'Te contactaremos pronto para el pago y tu acceso exclusivo a preventa.';
     } else {
       document.getElementById('success-icon').textContent = '✅';
       document.getElementById('success-plan-badge-wrap').innerHTML = '';
       document.getElementById('success-title').textContent = '¡Petición registrada!';
-      document.getElementById('success-msg').textContent = 'Tu petición fue recibida. Si el show se concreta, te avisaremos por email.';
+      document.getElementById('success-msg').textContent = 'Si el show se concreta, te avisaremos por email.';
     }
-    goStep(5);
+    document.getElementById('step4').classList.remove('active');
+    document.getElementById('step5').classList.add('active');
   }
+
+  // Contador en vivo
+  let petCount = 228;
+  const petEl = document.getElementById('stat-peticiones');
+  function tickPeticiones() {
+    petCount++;
+    if (petEl) petEl.textContent = petCount;
+    setTimeout(tickPeticiones, Math.random() * 10000 + 6000);
+  }
+  setTimeout(tickPeticiones, Math.random() * 8000 + 4000);
 
   // ── FAN FEED EN VIVO ──────────────────────────────────
   const FAN_MESSAGES = [
@@ -535,8 +496,8 @@
       ${msg.plan ? '<div class="fan-plan">⭐ Plan Premium</div>' : ''}
     `;
     feed.insertBefore(card, feed.firstChild);
-    // Limitar a MAX_VISIBLE
-    while (feed.children.length > MAX_VISIBLE) feed.removeChild(feed.lastChild);
+    // Scroll to top to show new message
+    feed.scrollTop = 0;
     // Quitar borde amarillo tras 2s
     if (isNew) setTimeout(() => card.classList.remove('new-entry'), 2000);
   }
@@ -557,16 +518,6 @@
     }, delay);
   }
   scheduleNext();
-  // ─────────────────────────────────────────────────────
-
-  // Init
-  (function init() {
-    const params = new URLSearchParams(window.location.search);
-    const ciudad = params.get('ciudad');
-    const plan   = params.get('plan');
-    if (ciudad) { const el = document.getElementById('ciudad'); if (el) el.value = ciudad; }
-    selectPlan((plan === 'free' || plan === 'premium') ? plan : 'premium');
-  })();
 </script>
 
 </body>
