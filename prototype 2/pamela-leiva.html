@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pamela Leiva — Pide su show · FansPass</title>
+  <script src="https://js.stripe.com/v3/"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #0a0a0a; --surface: #141414; --surface2: #1e1e1e;
+      --accent: #e8ff00; --text: #f0f0f0; --muted: #888;
+      --border: #2a2a2a; --radius: 12px; --error: #ff4d4d;
+    }
+    body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; min-height: 100vh; display: flex; flex-direction: column; }
+
+    /* NAV */
+    nav { display: flex; justify-content: space-between; align-items: center; padding: 20px 40px; border-bottom: 1px solid var(--border); position: sticky; top: 0; background: rgba(10,10,10,0.96); backdrop-filter: blur(12px); z-index: 100; }
+    .logo { font-size: 1.4rem; font-weight: 800; letter-spacing: -0.5px; text-decoration: none; color: var(--text); }
+    .logo span { color: var(--accent); }
+    .back { font-size: 0.85rem; color: var(--muted); text-decoration: none; display: flex; align-items: center; gap: 6px; }
+    .back:hover { color: var(--text); }
+
+    /* LAYOUT */
+    main { flex: 1; display: grid; grid-template-columns: 1fr 1fr; max-width: 1000px; margin: 60px auto; width: 100%; padding: 0 24px; gap: 80px; align-items: start; }
+
+    /* LEFT — ARTIST INFO */
+    .artist-info { padding-top: 8px; }
+
+    .artist-avatar {
+      width: 88px; height: 88px; border-radius: 50%;
+      border: 3px solid var(--accent);
+      background: var(--surface2);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 40px; margin-bottom: 20px;
+      position: relative; overflow: hidden;
+    }
+    .artist-avatar img { width: 100%; height: 100%; object-fit: cover; }
+    .verified-badge {
+      position: absolute; bottom: 2px; right: 2px;
+      background: var(--accent); color: #000;
+      border-radius: 50%; width: 22px; height: 22px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 900; border: 2px solid var(--bg);
+    }
+
+    .genre-tag { display: inline-block; background: rgba(232,255,0,0.1); border: 1px solid rgba(232,255,0,0.3); color: var(--accent); font-size: 0.72rem; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; padding: 3px 10px; border-radius: 20px; margin-bottom: 12px; }
+
+    .artist-info h1 { font-size: 2.4rem; font-weight: 900; letter-spacing: -1.5px; line-height: 1.05; margin-bottom: 12px; }
+    .artist-bio { color: var(--muted); font-size: 0.92rem; line-height: 1.7; margin-bottom: 28px; }
+
+    .artist-stats { display: flex; gap: 24px; margin-bottom: 28px; flex-wrap: wrap; }
+    .astat { text-align: center; }
+    .astat-n { font-size: 1.5rem; font-weight: 900; color: var(--accent); }
+    .astat-l { font-size: 0.72rem; color: var(--muted); margin-top: 2px; }
+
+    /* FEED EN VIVO */
+    .feed-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+    .feed-title { font-size: 0.75rem; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); }
+    .live-dot { display: flex; align-items: center; gap: 5px; font-size: 0.7rem; color: #4caf50; font-weight: 600; }
+    .live-dot::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: #4caf50; animation: pulse-green 1.5s infinite; }
+    @keyframes pulse-green { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.5;transform:scale(1.3)} }
+
+    /* QUOTE */
+    .artist-quote { border-left: 3px solid var(--accent); padding: 14px 18px; margin: 24px 0; background: rgba(232,255,0,0.04); border-radius: 0 var(--radius) var(--radius) 0; position: relative; }
+    .quote-mark { font-size: 3rem; color: var(--accent); line-height: 0; position: absolute; top: 24px; left: 10px; opacity: 0.4; font-family: Georgia, serif; }
+    .quote-text { font-size: 0.95rem; line-height: 1.65; color: var(--text); padding-left: 20px; font-style: italic; margin-bottom: 10px; }
+    .quote-author { font-size: 0.78rem; font-weight: 700; color: var(--accent); padding-left: 20px; letter-spacing: 0.3px; }
+
+    .fan-feed { display: flex; flex-direction: column; gap: 8px; }
+    .fan-voice {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 13px 15px;
+      animation: slideIn 0.4s ease;
+    }
+    .fan-voice.new-entry { border-color: rgba(232,255,0,0.25); }
+    @keyframes slideIn { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
+    .fan-voice-top { display: flex; align-items: center; gap: 8px; margin-bottom: 7px; }
+    .fan-avatar { width: 28px; height: 28px; border-radius: 50%; background: var(--surface2); display: flex; align-items: center; justify-content: center; font-size: 13px; flex-shrink: 0; }
+    .fan-name { font-size: 0.82rem; font-weight: 700; color: var(--text); }
+    .fan-city-tag { font-size: 0.68rem; background: var(--surface2); color: var(--muted); padding: 2px 7px; border-radius: 20px; margin-left: auto; }
+    .fan-text { font-size: 0.82rem; line-height: 1.55; color: #bbb; }
+    .fan-plan { display: inline-flex; align-items: center; gap: 4px; font-size: 0.68rem; font-weight: 700; color: var(--accent); margin-top: 7px; opacity: 0.85; }
+
+    /* FORM CARD — identical to form.html */
+    .form-card { background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 40px; }
+    .form-step { display: none; }
+    .form-step.active { display: block; }
+
+    .step-indicator { display: flex; gap: 8px; margin-bottom: 32px; }
+    .step-dot { height: 3px; border-radius: 2px; flex: 1; background: var(--border); transition: background 0.3s; }
+    .step-dot.done { background: var(--accent); }
+
+    .form-card h2 { font-size: 1.3rem; font-weight: 800; margin-bottom: 8px; }
+    .form-card .subtitle { font-size: 0.85rem; color: var(--muted); margin-bottom: 28px; }
+
+    /* PLAN SELECTOR */
+    .plan-options { display: flex; flex-direction: column; gap: 12px; margin-bottom: 8px; }
+    .plan-option { border: 2px solid var(--border); border-radius: var(--radius); padding: 20px; cursor: pointer; transition: border-color 0.2s, background 0.2s; position: relative; }
+    .plan-option:hover { border-color: #444; }
+    .plan-option.selected { border-color: var(--accent); background: rgba(232,255,0,0.04); }
+    .plan-option.premium { border-color: rgba(232,255,0,0.4); }
+    .plan-option.premium.selected { border-color: var(--accent); background: rgba(232,255,0,0.07); }
+    .plan-badge { position: absolute; top: -10px; right: 16px; background: var(--accent); color: #000; font-size: 0.65rem; font-weight: 800; padding: 3px 10px; border-radius: 100px; letter-spacing: 0.5px; text-transform: uppercase; }
+    .plan-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+    .plan-name { font-weight: 800; font-size: 1rem; }
+    .plan-price { font-weight: 900; font-size: 1.1rem; }
+    .plan-price.free { color: var(--muted); }
+    .plan-price.paid { color: var(--accent); }
+    .plan-perks { display: flex; flex-direction: column; gap: 7px; }
+    .perk { display: flex; align-items: center; gap: 8px; font-size: 0.82rem; color: var(--muted); }
+    .perk.active { color: var(--text); }
+    .perk-icon { font-size: 0.75rem; width: 16px; text-align: center; }
+
+    /* FIELDS */
+    .field { margin-bottom: 20px; }
+    label { display: block; font-size: 0.8rem; font-weight: 600; margin-bottom: 8px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; }
+    input, select {
+      width: 100%; background: var(--surface2); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 14px 16px;
+      color: var(--text); font-size: 0.95rem; outline: none;
+      transition: border-color 0.2s; font-family: inherit;
+    }
+    select { cursor: pointer; appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23888' stroke-width='1.5' fill='none'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 16px center; }
+    input::placeholder { color: #444; }
+    input:focus, select:focus { border-color: var(--accent); }
+    input.error, select.error { border-color: var(--error); }
+    .field-hint { font-size: 0.75rem; color: var(--muted); margin-top: 6px; }
+    .field-error { font-size: 0.75rem; color: var(--error); margin-top: 6px; display: none; }
+    input.error ~ .field-error, select.error ~ .field-error { display: block; }
+
+    /* Artista locked display */
+    .artist-locked { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; display: flex; align-items: center; gap: 10px; }
+    .artist-locked-name { font-weight: 700; font-size: 0.95rem; }
+    .artist-locked-badge { font-size: 0.7rem; background: rgba(232,255,0,0.1); color: var(--accent); border: 1px solid rgba(232,255,0,0.3); padding: 2px 8px; border-radius: 20px; font-weight: 600; }
+
+    /* BUTTONS */
+    .btn { width: 100%; padding: 16px; border-radius: 100px; font-weight: 800; font-size: 1rem; cursor: pointer; border: none; transition: transform 0.2s, opacity 0.2s; }
+    .btn:hover { transform: translateY(-1px); opacity: 0.9; }
+    .btn-accent { background: var(--accent); color: #000; }
+    .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text); margin-top: 10px; }
+    .btn-outline:hover { border-color: var(--text); }
+
+    /* PAYMENT */
+    .price-display { background: var(--surface2); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center; }
+    .price-left { font-size: 0.9rem; color: var(--muted); }
+    .price-left strong { display: block; color: var(--text); font-size: 1rem; margin-bottom: 2px; }
+    .price-amount { font-size: 1.6rem; font-weight: 900; color: var(--accent); }
+    .secure-badge { display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 0.75rem; color: var(--muted); margin-top: 16px; }
+    .secure-badge svg { width: 14px; height: 14px; }
+    .legal { font-size: 0.72rem; color: #555; text-align: center; margin-top: 20px; line-height: 1.5; }
+    .legal a { color: #666; }
+
+    /* SUCCESS */
+    .success-icon { width: 64px; height: 64px; background: rgba(232,255,0,0.15); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.8rem; margin: 0 auto 24px; }
+    .success-content { text-align: center; }
+    .success-content h2 { font-size: 1.5rem; margin-bottom: 12px; }
+    .success-content p { color: var(--muted); font-size: 0.9rem; line-height: 1.7; margin-bottom: 24px; }
+    .success-detail { background: var(--surface2); border-radius: var(--radius); padding: 16px; font-size: 0.85rem; color: var(--muted); text-align: left; margin-bottom: 24px; }
+    .success-detail strong { color: var(--text); }
+    .success-plan-badge { display: inline-flex; align-items: center; gap: 6px; background: rgba(232,255,0,0.1); border: 1px solid rgba(232,255,0,0.3); color: var(--accent); font-size: 0.75rem; font-weight: 700; padding: 4px 12px; border-radius: 100px; margin-bottom: 16px; }
+
+    @media (max-width: 768px) {
+      main { grid-template-columns: 1fr; gap: 40px; margin: 32px auto; }
+      nav { padding: 16px 20px; }
+      .form-card { padding: 28px 24px; }
+      .artist-info { padding-top: 0; }
+    }
+  </style>
+</head>
+<body>
+
+<nav>
+  <a href="index.html" class="logo">Fans<span>Pass</span></a>
+  <a href="index.html" class="back">← Volver</a>
+</nav>
+
+<main>
+
+  <!-- LEFT: ARTIST INFO -->
+  <div class="artist-info">
+
+    <div class="artist-avatar">
+      <img src="pamela-leiva.png" alt="Pamela Leiva">
+      <div class="verified-badge">✓</div>
+    </div>
+
+    <div class="genre-tag">Comedia</div>
+    <h1>Pamela Leiva</h1>
+    <p class="artist-bio">Pamela Leiva puentealtina, comediante, actriz y cantante ha demostrado ser una narradora de historias, una observadora aguda de la vida cotidiana y una maestra del humor. Con su estilo único y su carisma innegable, Pamela ha conquistado los escenarios de todo Chile llevando risas y alegría de Arica a Punta Arenas.</p>
+
+    <div class="artist-quote">
+      <span class="quote-mark">"</span>
+      <p class="quote-text">Si quieres verme en tu ciudad, este es el lugar. Pide tu show — yo veo cada petición.</p>
+      <span class="quote-author">— Pamela Leiva</span>
+    </div>
+
+    <div class="artist-stats">
+      <div class="astat">
+        <div class="astat-n" id="stat-peticiones">228</div>
+        <div class="astat-l">peticiones activas</div>
+      </div>
+      <div class="astat">
+        <div class="astat-n">6</div>
+        <div class="astat-l">ciudades pidiendo</div>
+      </div>
+    </div>
+
+    <div class="feed-header">
+      <span class="feed-title">Lo que dicen sus fans</span>
+      <span class="live-dot">En vivo</span>
+    </div>
+    <div class="fan-feed" id="fan-feed">
+      <!-- se llena con JS -->
+    </div>
+
+  </div>
+
+  <!-- RIGHT: FORM -->
+  <div class="form-card">
+    <div class="step-indicator">
+      <div class="step-dot done" id="dot1"></div>
+      <div class="step-dot" id="dot2"></div>
+      <div class="step-dot" id="dot3"></div>
+      <div class="step-dot" id="dot4"></div>
+    </div>
+
+    <!-- STEP 1: Datos personales -->
+    <div class="form-step active" id="step1">
+      <h2>Pide tu show 🎤</h2>
+      <p class="subtitle">Ingresa tus datos para registrar la petición.</p>
+      <div class="field">
+        <label>Nombre completo</label>
+        <input type="text" id="nombre" placeholder="María González" />
+        <div class="field-error">Ingresa tu nombre</div>
+      </div>
+      <div class="field">
+        <label>Correo electrónico</label>
+        <input type="email" id="email" placeholder="tu@email.com" />
+        <div class="field-error">Ingresa un email válido</div>
+      </div>
+      <button class="btn btn-accent" style="margin-top:8px" onclick="goStep2()">Continuar →</button>
+    </div>
+
+    <!-- STEP 2: Ciudad -->
+    <div class="form-step" id="step2">
+      <h2>¿En qué ciudad?</h2>
+      <p class="subtitle">Elige la ciudad donde quieres ver a Pamela Leiva.</p>
+      <div class="field">
+        <label>Artista</label>
+        <div class="artist-locked">
+          <img src="pamela-leiva.png" alt="Pamela Leiva" style="width:28px;height:28px;border-radius:50%;object-fit:cover;">
+          <span class="artist-locked-name">Pamela Leiva</span>
+          <span class="artist-locked-badge">✓ Verificada</span>
+        </div>
+      </div>
+      <div class="field">
+        <label>Ciudad</label>
+        <select id="ciudad">
+          <option value="">Selecciona tu ciudad...</option>
+          <option value="Santiago">Santiago</option>
+          <option value="Valparaíso">Valparaíso</option>
+          <option value="Concepción">Concepción</option>
+          <option value="Antofagasta">Antofagasta</option>
+          <option value="Temuco">Temuco</option>
+          <option value="La Serena">La Serena</option>
+        </select>
+        <div class="field-error">Selecciona tu ciudad</div>
+      </div>
+      <button class="btn btn-accent" onclick="goStep3()">Continuar →</button>
+      <button class="btn btn-outline" onclick="goStep(1)">← Volver</button>
+    </div>
+
+    <!-- STEP 3: Elige plan -->
+    <div class="form-step" id="step3">
+      <h2>¿Cómo quieres pedir?</h2>
+      <p class="subtitle">Casi listo — elige cómo registrar tu petición.</p>
+      <div class="plan-options">
+        <div class="plan-option" id="plan-free" onclick="selectPlan('free')">
+          <div class="plan-header">
+            <span class="plan-name">Gratuito</span>
+            <span class="plan-price free">$0</span>
+          </div>
+          <div class="plan-perks">
+            <div class="perk active"><span class="perk-icon">✓</span> Registra tu petición</div>
+            <div class="perk active"><span class="perk-icon">✓</span> Notificación si el show se confirma</div>
+            <div class="perk"><span class="perk-icon">✗</span> Sin acceso a preventa exclusiva</div>
+          </div>
+        </div>
+        <div class="plan-option premium selected" id="plan-premium" onclick="selectPlan('premium')">
+          <div class="plan-badge">⭐ Premium</div>
+          <div class="plan-header">
+            <span class="plan-name">Premium</span>
+            <span class="plan-price paid">$2.990</span>
+          </div>
+          <div class="plan-perks">
+            <div class="perk active"><span class="perk-icon">✓</span> Registra tu petición</div>
+            <div class="perk active"><span class="perk-icon">✓</span> Notificación si el show se confirma</div>
+            <div class="perk active"><span class="perk-icon">✓</span> Acceso exclusivo a preventa</div>
+            <div class="perk active"><span class="perk-icon">✓</span> Tu petición tiene peso real</div>
+          </div>
+        </div>
+      </div>
+      <!-- RUT aparece solo si elige Premium -->
+      <div class="field" id="rut-field" style="margin-top:20px;display:none;">
+        <label>RUT</label>
+        <input type="text" id="rut" placeholder="12.345.678-9" />
+        <div class="field-hint">Para validar tu acceso a preventa en la ticketera</div>
+        <div class="field-error">Ingresa tu RUT</div>
+      </div>
+      <button class="btn btn-accent" style="margin-top:20px" onclick="goStep4()">Continuar →</button>
+      <button class="btn btn-outline" onclick="goStep(2)">← Volver</button>
+    </div>
+
+    <!-- STEP 4: Pago o confirmación -->
+    <div class="form-step" id="step4">
+
+      <!-- PREMIUM: pago -->
+      <div id="payment-section">
+        <h2>Paga tu petición</h2>
+        <p class="subtitle">Pago seguro con tarjeta. No reembolsable.</p>
+        <div class="price-display">
+          <div class="price-left">
+            <strong>Pamela Leiva</strong>
+            <span id="resumen-ciudad">—</span>
+          </div>
+          <div class="price-amount">$2.990</div>
+        </div>
+        <div id="payment-element" style="margin-bottom:20px;"></div>
+        <div id="payment-error" style="color:var(--error);font-size:0.82rem;margin-bottom:12px;display:none;"></div>
+        <button class="btn btn-accent" id="pay-btn" onclick="processPayment()">Pagar $2.990 →</button>
+        <button class="btn btn-outline" onclick="goStep(3)">← Volver</button>
+        <div class="secure-badge">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          Pago seguro · Stripe
+        </div>
+        <div class="legal">Al pagar aceptas los <a href="#">Términos y condiciones</a>. El pago no es reembolsable y no garantiza la realización del evento.</div>
+      </div>
+
+      <!-- FREE: confirmación -->
+      <div id="free-confirm-section" style="display:none">
+        <h2>Confirma tu petición</h2>
+        <p class="subtitle">Revisa los datos antes de enviar.</p>
+        <div style="background:var(--surface2);border-radius:var(--radius);padding:20px;margin-bottom:20px;">
+          <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:0.9rem;">
+            <span style="color:var(--muted)">Artista</span><span style="font-weight:600">Pamela Leiva</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;padding:8px 0;font-size:0.9rem;">
+            <span style="color:var(--muted)">Ciudad</span><span id="free-ciudad" style="font-weight:600"></span>
+          </div>
+        </div>
+        <div style="background:rgba(232,255,0,0.04);border:1px solid rgba(232,255,0,0.2);border-radius:var(--radius);padding:14px;margin-bottom:20px;font-size:0.82rem;color:var(--muted);line-height:1.6;">
+          ⭐ Actualiza a <strong style="color:var(--text)">Premium</strong> por $2.990 y obtén acceso exclusivo a preventa.
+        </div>
+        <button class="btn btn-accent" onclick="confirmFree()">Enviar petición →</button>
+        <button class="btn btn-outline" onclick="goStep(3)">← Volver</button>
+      </div>
+
+    </div>
+
+    <!-- STEP 5: Éxito -->
+    <div class="form-step" id="step5">
+      <div class="success-content">
+        <div class="success-icon" id="success-icon">🎉</div>
+        <div id="success-plan-badge-wrap"></div>
+        <h2 id="success-title">¡Petición registrada!</h2>
+        <p id="success-msg">Tu petición fue recibida. Si el show se concreta, te avisaremos por email.</p>
+        <div class="success-detail">
+          📧 Enviamos confirmación a <strong id="confirm-email"></strong> por el show de <strong>Pamela Leiva</strong> en <strong id="confirm-ciudad"></strong>.
+        </div>
+        <a href="index.html"><button class="btn btn-accent">Pedir otro show</button></a>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<script>
+  const STRIPE_PUBLISHABLE_KEY = 'pk_test_REEMPLAZAR_CON_TU_CLAVE';
+  const SUPABASE_FUNCTIONS_URL = 'https://REEMPLAZAR.supabase.co/functions/v1';
+
+  const stripe = Stripe(STRIPE_PUBLISHABLE_KEY);
+  let elements = null;
+  let currentStep = 1;
+  let selectedPlan = 'premium';
+
+  // Contador en vivo
+  let petCount = 228;
+  const petEl = document.getElementById('stat-peticiones');
+  function tickPeticiones() {
+    petCount++;
+    if (petEl) petEl.textContent = petCount;
+    setTimeout(tickPeticiones, Math.random() * 10000 + 6000);
+  }
+  setTimeout(tickPeticiones, Math.random() * 8000 + 4000);
+
+  function selectPlan(plan) {
+    selectedPlan = plan;
+    document.getElementById('plan-free').classList.toggle('selected', plan === 'free');
+    document.getElementById('plan-premium').classList.toggle('selected', plan === 'premium');
+    document.getElementById('rut-field').style.display = plan === 'premium' ? 'block' : 'none';
+  }
+
+  function goStep(n) {
+    document.getElementById('step' + currentStep).classList.remove('active');
+    currentStep = n;
+    document.getElementById('step' + currentStep).classList.add('active');
+    for (let i = 1; i <= 4; i++) {
+      document.getElementById('dot' + i).classList.toggle('done', i <= currentStep);
+    }
+  }
+
+  function validate(ids) {
+    let ok = true;
+    ids.forEach(id => {
+      const el = document.getElementById(id);
+      if (!el || !el.value.trim()) { if (el) el.classList.add('error'); ok = false; }
+      else el.classList.remove('error');
+    });
+    return ok;
+  }
+
+  // Step 1 → 2: valida nombre + email
+  function goStep2() {
+    if (!validate(['nombre', 'email'])) return;
+    goStep(2);
+  }
+
+  // Step 2 → 3: valida ciudad
+  function goStep3() {
+    if (!validate(['ciudad'])) return;
+    goStep(3);
+  }
+
+  // Step 3 → 4: valida plan (y RUT si es premium), muestra sección correcta
+  function goStep4() {
+    if (selectedPlan === 'premium' && !validate(['rut'])) return;
+    const ciudad = document.getElementById('ciudad').value;
+    if (selectedPlan === 'premium') {
+      document.getElementById('payment-section').style.display = 'block';
+      document.getElementById('free-confirm-section').style.display = 'none';
+      document.getElementById('resumen-ciudad').textContent = ciudad;
+    } else {
+      document.getElementById('payment-section').style.display = 'none';
+      document.getElementById('free-confirm-section').style.display = 'block';
+      document.getElementById('free-ciudad').textContent = ciudad;
+    }
+    goStep(4);
+    if (selectedPlan === 'premium') mountStripeElement();
+  }
+
+  async function mountStripeElement() {
+    const nombre = document.getElementById('nombre').value;
+    const email  = document.getElementById('email').value;
+    const rut    = document.getElementById('rut').value;
+    const ciudad = document.getElementById('ciudad').value;
+    try {
+      const res = await fetch(`${SUPABASE_FUNCTIONS_URL}/create-payment-intent`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nombre, email, rut, artista: 'Pamela Leiva', ciudad }),
+      });
+      const { clientSecret, error } = await res.json();
+      if (error) throw new Error(error);
+      elements = stripe.elements({ clientSecret, appearance: { theme: 'night', variables: { colorPrimary: '#e8ff00', colorBackground: '#1e1e1e', colorText: '#f0f0f0', borderRadius: '12px' } } });
+      elements.create('payment').mount('#payment-element');
+    } catch {
+      document.getElementById('payment-element').innerHTML =
+        '<p style="color:var(--muted);font-size:0.82rem;padding:12px 0">⚠️ Modo demo — configura tus claves para activar Stripe real.</p>';
+    }
+  }
+
+  async function processPayment() {
+    const btn = document.getElementById('pay-btn');
+    const errorEl = document.getElementById('payment-error');
+    errorEl.style.display = 'none';
+    btn.textContent = 'Procesando...';
+    btn.disabled = true;
+    if (!elements) { setTimeout(() => showSuccess('premium'), 1500); return; }
+    const { error } = await stripe.confirmPayment({ elements, confirmParams: { return_url: window.location.origin + '/success.html' } });
+    if (error) {
+      errorEl.textContent = error.message;
+      errorEl.style.display = 'block';
+      btn.textContent = 'Pagar $2.990 →';
+      btn.disabled = false;
+    }
+  }
+
+  function confirmFree() { showSuccess('free'); }
+
+  function showSuccess(plan) {
+    document.getElementById('confirm-email').textContent = document.getElementById('email').value;
+    document.getElementById('confirm-ciudad').textContent = document.getElementById('ciudad').value;
+    if (plan === 'premium') {
+      document.getElementById('success-icon').textContent = '🎉';
+      document.getElementById('success-plan-badge-wrap').innerHTML = '<div class="success-plan-badge">⭐ Plan Premium activado</div>';
+      document.getElementById('success-title').textContent = '¡Petición Premium registrada!';
+      document.getElementById('success-msg').textContent = 'Eres de los primeros en acceder a la preventa si el show se concreta. Te avisaremos por email.';
+    } else {
+      document.getElementById('success-icon').textContent = '✅';
+      document.getElementById('success-plan-badge-wrap').innerHTML = '';
+      document.getElementById('success-title').textContent = '¡Petición registrada!';
+      document.getElementById('success-msg').textContent = 'Tu petición fue recibida. Si el show se concreta, te avisaremos por email.';
+    }
+    goStep(5);
+  }
+
+  // ── FAN FEED EN VIVO ──────────────────────────────────
+  const FAN_MESSAGES = [
+    { emoji: '😍', nombre: 'Camila R.',    ciudad: 'Concepción',  plan: true,  texto: '"Llevo 3 años esperando que venga a Conce. Ya pagué mi petición 🙏"' },
+    { emoji: '🔥', nombre: 'Francisca V.', ciudad: 'Antofagasta', plan: true,  texto: '"Me parece justo pagar para que sepan que en Antofagasta somos fans reales."' },
+    { emoji: '🙌', nombre: 'Diego M.',     ciudad: 'Temuco',      plan: false, texto: '"Ojalá venga al sur. Llevamos años sin shows buenos acá."' },
+    { emoji: '💛', nombre: 'Valentina C.', ciudad: 'Valparaíso',  plan: true,  texto: '"La vi en Santiago y fue lo mejor del año. Ahora la quiero en Valpo."' },
+    { emoji: '🎤', nombre: 'Javiera P.',   ciudad: 'La Serena',   plan: true,  texto: '"Si confirman La Serena, voy con toda mi familia. Ya mandé mi petición."' },
+    { emoji: '🤩', nombre: 'Tomás E.',     ciudad: 'Santiago',    plan: false, texto: '"La mejor comediante chilena sin discusión. Merece llenar el Movistar."' },
+    { emoji: '💬', nombre: 'Isidora F.',   ciudad: 'Viña del Mar', plan: true, texto: '"Compré Premium porque quiero que los productores lo vean en serio."' },
+    { emoji: '🙏', nombre: 'Rodrigo A.',   ciudad: 'Puerto Montt', plan: true, texto: '"Desde el sur también se pide. Que llegue a regiones de una vez."' },
+    { emoji: '⭐', nombre: 'Daniela S.',   ciudad: 'Iquique',     plan: true,  texto: '"El norte también existe. Llevamos años esperando shows de calidad."' },
+    { emoji: '❤️', nombre: 'Matías G.',    ciudad: 'Rancagua',    plan: false, texto: '"Mi mamá es fan número uno de Pamela. Ojalá venga a Rancagua."' },
+  ];
+
+  const feed = document.getElementById('fan-feed');
+  let feedIndex = 0;
+  const MAX_VISIBLE = 4;
+
+  function addFanCard(msg, isNew = false) {
+    const card = document.createElement('div');
+    card.className = 'fan-voice' + (isNew ? ' new-entry' : '');
+    card.innerHTML = `
+      <div class="fan-voice-top">
+        <div class="fan-avatar">${msg.emoji}</div>
+        <span class="fan-name">${msg.nombre}</span>
+        <span class="fan-city-tag">📍 ${msg.ciudad}</span>
+      </div>
+      <div class="fan-text">${msg.texto}</div>
+      ${msg.plan ? '<div class="fan-plan">⭐ Plan Premium</div>' : ''}
+    `;
+    feed.insertBefore(card, feed.firstChild);
+    // Limitar a MAX_VISIBLE
+    while (feed.children.length > MAX_VISIBLE) feed.removeChild(feed.lastChild);
+    // Quitar borde amarillo tras 2s
+    if (isNew) setTimeout(() => card.classList.remove('new-entry'), 2000);
+  }
+
+  // Carga inicial: 3 mensajes sin animación
+  for (let i = 0; i < 3; i++) {
+    addFanCard(FAN_MESSAGES[feedIndex % FAN_MESSAGES.length]);
+    feedIndex++;
+  }
+
+  // Agrega uno nuevo cada 5–10 segundos
+  function scheduleNext() {
+    const delay = Math.random() * 5000 + 5000;
+    setTimeout(() => {
+      addFanCard(FAN_MESSAGES[feedIndex % FAN_MESSAGES.length], true);
+      feedIndex++;
+      scheduleNext();
+    }, delay);
+  }
+  scheduleNext();
+  // ─────────────────────────────────────────────────────
+
+  // Init
+  (function init() {
+    const params = new URLSearchParams(window.location.search);
+    const ciudad = params.get('ciudad');
+    const plan   = params.get('plan');
+    if (ciudad) { const el = document.getElementById('ciudad'); if (el) el.value = ciudad; }
+    selectPlan((plan === 'free' || plan === 'premium') ? plan : 'premium');
+  })();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pide tu Show — FansPass</title>
+  <script src="https://js.stripe.com/v3/"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0a0a0a;
+      --surface: #141414;
+      --surface2: #1e1e1e;
+      --accent: #e8ff00;
+      --text: #f0f0f0;
+      --muted: #888;
+      --border: #2a2a2a;
+      --radius: 12px;
+      --error: #ff4d4d;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 20px 40px;
+      border-bottom: 1px solid var(--border);
+    }
+    .logo { font-size: 1.4rem; font-weight: 800; letter-spacing: -0.5px; text-decoration: none; color: var(--text); }
+    .logo span { color: var(--accent); }
+    .back { font-size: 0.85rem; color: var(--muted); text-decoration: none; display: flex; align-items: center; gap: 6px; }
+    .back:hover { color: var(--text); }
+
+    main {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      max-width: 1000px;
+      margin: 60px auto;
+      width: 100%;
+      padding: 0 24px;
+      gap: 80px;
+      align-items: start;
+    }
+
+    /* LEFT */
+    .info { padding-top: 8px; }
+    .info-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(232,255,0,0.1);
+      border: 1px solid rgba(232,255,0,0.3);
+      padding: 5px 12px;
+      border-radius: 100px;
+      font-size: 0.75rem;
+      color: var(--accent);
+      font-weight: 600;
+      margin-bottom: 24px;
+    }
+    .info h1 { font-size: 2.2rem; font-weight: 900; letter-spacing: -1px; line-height: 1.1; margin-bottom: 16px; }
+    .info p { color: var(--muted); font-size: 0.95rem; line-height: 1.7; margin-bottom: 40px; }
+    .benefits { display: flex; flex-direction: column; gap: 16px; }
+    .benefit { display: flex; align-items: flex-start; gap: 14px; }
+    .benefit-icon { width: 36px; height: 36px; background: var(--surface2); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 1rem; flex-shrink: 0; }
+    .benefit-text strong { display: block; font-size: 0.9rem; margin-bottom: 2px; }
+    .benefit-text span { font-size: 0.8rem; color: var(--muted); }
+
+    /* FORM CARD */
+    .form-card { background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 40px; }
+    .form-step { display: none; }
+    .form-step.active { display: block; }
+
+    .step-indicator { display: flex; gap: 8px; margin-bottom: 32px; }
+    .step-dot { height: 3px; border-radius: 2px; flex: 1; background: var(--border); transition: background 0.3s; }
+    .step-dot.done { background: var(--accent); }
+
+    .form-card h2 { font-size: 1.3rem; font-weight: 800; margin-bottom: 8px; }
+    .form-card .subtitle { font-size: 0.85rem; color: var(--muted); margin-bottom: 28px; }
+
+    /* PLAN SELECTOR */
+    .plan-options { display: flex; flex-direction: column; gap: 12px; margin-bottom: 8px; }
+    .plan-option {
+      border: 2px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      cursor: pointer;
+      transition: border-color 0.2s, background 0.2s;
+      position: relative;
+    }
+    .plan-option:hover { border-color: #444; }
+    .plan-option.selected { border-color: var(--accent); background: rgba(232,255,0,0.04); }
+    .plan-option.premium { border-color: rgba(232,255,0,0.4); }
+    .plan-option.premium.selected { border-color: var(--accent); background: rgba(232,255,0,0.07); }
+
+    .plan-badge {
+      position: absolute;
+      top: -10px;
+      right: 16px;
+      background: var(--accent);
+      color: #000;
+      font-size: 0.65rem;
+      font-weight: 800;
+      padding: 3px 10px;
+      border-radius: 100px;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+    .plan-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+    .plan-name { font-weight: 800; font-size: 1rem; }
+    .plan-price { font-weight: 900; font-size: 1.1rem; }
+    .plan-price.free { color: var(--muted); }
+    .plan-price.paid { color: var(--accent); }
+    .plan-perks { display: flex; flex-direction: column; gap: 7px; }
+    .perk {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.82rem;
+      color: var(--muted);
+    }
+    .perk.active { color: var(--text); }
+    .perk-icon { font-size: 0.75rem; width: 16px; text-align: center; }
+
+    /* FIELDS */
+    .field { margin-bottom: 20px; }
+    label { display: block; font-size: 0.8rem; font-weight: 600; margin-bottom: 8px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; }
+    input {
+      width: 100%;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px 16px;
+      color: var(--text);
+      font-size: 0.95rem;
+      outline: none;
+      transition: border-color 0.2s;
+      font-family: inherit;
+    }
+    input::placeholder { color: #444; }
+    input:focus { border-color: var(--accent); }
+    input.error { border-color: var(--error); }
+    .field-hint { font-size: 0.75rem; color: var(--muted); margin-top: 6px; }
+    .field-error { font-size: 0.75rem; color: var(--error); margin-top: 6px; display: none; }
+    input.error + .field-error { display: block; }
+
+    /* BUTTONS */
+    .btn { width: 100%; padding: 16px; border-radius: 100px; font-weight: 800; font-size: 1rem; cursor: pointer; border: none; transition: transform 0.2s, opacity 0.2s; }
+    .btn:hover { transform: translateY(-1px); opacity: 0.9; }
+    .btn-accent { background: var(--accent); color: #000; }
+    .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text); margin-top: 10px; }
+    .btn-outline:hover { border-color: var(--text); }
+
+    /* PAYMENT */
+    .price-display { background: var(--surface2); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center; }
+    .price-left { font-size: 0.9rem; color: var(--muted); }
+    .price-left strong { display: block; color: var(--text); font-size: 1rem; margin-bottom: 2px; }
+    .price-amount { font-size: 1.6rem; font-weight: 900; color: var(--accent); }
+    .card-field { margin-bottom: 20px; }
+    .card-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .secure-badge { display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 0.75rem; color: var(--muted); margin-top: 16px; }
+    .secure-badge svg { width: 14px; height: 14px; }
+
+    /* SUCCESS */
+    .success-icon { width: 64px; height: 64px; background: rgba(232,255,0,0.15); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.8rem; margin: 0 auto 24px; }
+    .success-content { text-align: center; }
+    .success-content h2 { font-size: 1.5rem; margin-bottom: 12px; }
+    .success-content p { color: var(--muted); font-size: 0.9rem; line-height: 1.7; margin-bottom: 24px; }
+    .success-detail { background: var(--surface2); border-radius: var(--radius); padding: 16px; font-size: 0.85rem; color: var(--muted); text-align: left; margin-bottom: 24px; }
+    .success-detail strong { color: var(--text); }
+    .success-plan-badge { display: inline-flex; align-items: center; gap: 6px; background: rgba(232,255,0,0.1); border: 1px solid rgba(232,255,0,0.3); color: var(--accent); font-size: 0.75rem; font-weight: 700; padding: 4px 12px; border-radius: 100px; margin-bottom: 16px; }
+
+    .legal { font-size: 0.72rem; color: #555; text-align: center; margin-top: 20px; line-height: 1.5; }
+    .legal a { color: #666; }
+
+    @media (max-width: 768px) {
+      main { grid-template-columns: 1fr; gap: 40px; margin: 32px auto; }
+      .info { padding-top: 0; }
+      nav { padding: 16px 20px; }
+      .form-card { padding: 28px 24px; }
+    }
+  </style>
+</head>
+<body>
+
+<nav>
+  <a href="index.html" class="logo">Fans<span>Pass</span></a>
+  <a href="index.html" class="back">← Volver</a>
+</nav>
+
+<main>
+  <!-- INFO -->
+  <div class="info">
+    <div class="info-badge">🎤 Preventa exclusiva</div>
+    <h1>Pide el show que quieres ver</h1>
+    <p>Tu petición se suma a miles de fans. Cuando el show se concreta, tú eres el primero en saber.</p>
+    <div class="benefits">
+      <div class="benefit">
+        <div class="benefit-icon">🎯</div>
+        <div class="benefit-text">
+          <strong>Acceso a preventa exclusiva</strong>
+          <span>Antes que el público general en la ticketera</span>
+        </div>
+      </div>
+      <div class="benefit">
+        <div class="benefit-icon">📊</div>
+        <div class="benefit-text">
+          <strong>Tu petición tiene peso real</strong>
+          <span>Con pago, la productora ve demanda comprobada</span>
+        </div>
+      </div>
+      <div class="benefit">
+        <div class="benefit-icon">🔔</div>
+        <div class="benefit-text">
+          <strong>Notificación inmediata</strong>
+          <span>Te avisamos por email cuando el show se confirme</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FORM -->
+  <div class="form-card">
+    <div class="step-indicator">
+      <div class="step-dot done" id="dot1"></div>
+      <div class="step-dot" id="dot2"></div>
+      <div class="step-dot" id="dot3"></div>
+      <div class="step-dot" id="dot4"></div>
+    </div>
+
+    <!-- STEP 1: Plan selection -->
+    <div class="form-step active" id="step1">
+      <h2>Elige tu plan</h2>
+      <p class="subtitle">¿Cómo quieres pedir tu show?</p>
+
+      <div class="plan-options">
+
+        <!-- FREE -->
+        <div class="plan-option" id="plan-free" onclick="selectPlan('free')">
+          <div class="plan-header">
+            <span class="plan-name">Gratuito</span>
+            <span class="plan-price free">$0</span>
+          </div>
+          <div class="plan-perks">
+            <div class="perk active"><span class="perk-icon">✓</span> Registra tu petición</div>
+            <div class="perk active"><span class="perk-icon">✓</span> Notificación si el show se confirma</div>
+            <div class="perk"><span class="perk-icon">✗</span> Sin acceso a preventa exclusiva</div>
+            <div class="perk"><span class="perk-icon">✗</span> Sin descuentos especiales</div>
+          </div>
+        </div>
+
+        <!-- PREMIUM -->
+        <div class="plan-option premium selected" id="plan-premium" onclick="selectPlan('premium')">
+          <div class="plan-badge">⭐ Premium</div>
+          <div class="plan-header">
+            <span class="plan-name">Premium</span>
+            <span class="plan-price paid">$2.990</span>
+          </div>
+          <div class="plan-perks">
+            <div class="perk active"><span class="perk-icon">✓</span> Registra tu petición</div>
+            <div class="perk active"><span class="perk-icon">✓</span> Notificación si el show se confirma</div>
+            <div class="perk active"><span class="perk-icon">✓</span> Acceso exclusivo a preventa</div>
+            <div class="perk active"><span class="perk-icon">✓</span> Tu petición tiene peso real ante productoras</div>
+          </div>
+        </div>
+
+      </div>
+
+      <button class="btn btn-accent" style="margin-top:24px" onclick="goStep2()">Continuar →</button>
+    </div>
+
+    <!-- STEP 2: Fan data -->
+    <div class="form-step" id="step2">
+      <h2>¿Quién eres?</h2>
+      <p class="subtitle">Tus datos para registrar la petición y enviarte novedades.</p>
+
+      <div class="field">
+        <label>Nombre completo</label>
+        <input type="text" id="nombre" placeholder="María González" />
+        <div class="field-error">Ingresa tu nombre</div>
+      </div>
+      <div class="field">
+        <label>Correo electrónico</label>
+        <input type="email" id="email" placeholder="tu@email.com" />
+        <div class="field-error">Ingresa un email válido</div>
+      </div>
+      <div class="field" id="rut-field">
+        <label>RUT</label>
+        <input type="text" id="rut" placeholder="12.345.678-9" />
+        <div class="field-hint">Para validar tu acceso a preventa en la ticketera</div>
+        <div class="field-error">Ingresa tu RUT</div>
+      </div>
+
+      <button class="btn btn-accent" onclick="goStep3()">Continuar →</button>
+      <button class="btn btn-outline" onclick="goStep(1)">← Volver</button>
+    </div>
+
+    <!-- STEP 3: Show data -->
+    <div class="form-step" id="step3">
+      <h2>¿A quién quieres ver?</h2>
+      <p class="subtitle">Escribe el artista y la ciudad. Sin límites ni catálogos.</p>
+
+      <div class="field">
+        <label>Artista o banda</label>
+        <input type="text" id="artista" placeholder="Ej: Coldplay, Bad Bunny, Duki..." />
+        <div class="field-error">Escribe el artista que quieres ver</div>
+      </div>
+      <div class="field">
+        <label>Ciudad</label>
+        <input type="text" id="ciudad" placeholder="Ej: Santiago, Valparaíso, Concepción..." />
+        <div class="field-error">Escribe la ciudad</div>
+      </div>
+
+      <button class="btn btn-accent" onclick="goStep4()">Continuar →</button>
+      <button class="btn btn-outline" onclick="goStep(2)">← Volver</button>
+    </div>
+
+    <!-- STEP 4: Payment (premium) or Confirm (free) -->
+    <div class="form-step" id="step4">
+
+      <!-- PAYMENT (shown if premium) -->
+      <div id="payment-section">
+        <h2>Paga tu petición</h2>
+        <p class="subtitle">Pago seguro con tarjeta. No reembolsable.</p>
+
+        <div class="price-display">
+          <div class="price-left">
+            <strong id="resumen-artista">—</strong>
+            <span id="resumen-ciudad">—</span>
+          </div>
+          <div class="price-amount">$2.990</div>
+        </div>
+
+        <!-- Stripe Payment Element se inyecta aquí -->
+        <div id="payment-element" style="margin-bottom:20px;"></div>
+        <div id="payment-error" style="color:var(--error);font-size:0.82rem;margin-bottom:12px;display:none;"></div>
+
+        <button class="btn btn-accent" id="pay-btn" onclick="processPayment()">Pagar $2.990 →</button>
+        <button class="btn btn-outline" onclick="goStep(3)">← Volver</button>
+
+        <div class="secure-badge">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          Pago seguro · Stripe
+        </div>
+        <div class="legal">
+          Al pagar aceptas los <a href="terminos.html">Términos y condiciones</a>.
+          El pago no es reembolsable y no garantiza la realización del evento.
+        </div>
+      </div>
+
+      <!-- FREE CONFIRM (shown if free) -->
+      <div id="free-confirm-section" style="display:none">
+        <h2>Confirma tu petición</h2>
+        <p class="subtitle">Revisa los datos antes de enviar.</p>
+        <div style="background:var(--surface2);border-radius:var(--radius);padding:20px;margin-bottom:24px;">
+          <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:0.9rem;">
+            <span style="color:var(--muted)">Artista</span>
+            <span id="free-artista" style="font-weight:600"></span>
+          </div>
+          <div style="display:flex;justify-content:space-between;padding:8px 0;font-size:0.9rem;">
+            <span style="color:var(--muted)">Ciudad</span>
+            <span id="free-ciudad" style="font-weight:600"></span>
+          </div>
+        </div>
+        <div style="background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:24px;font-size:0.82rem;color:var(--muted);line-height:1.6;">
+          ⚡ Con el plan <strong style="color:var(--text)">Premium</strong> tu petición tiene más peso y obtienes acceso a preventa exclusiva por solo $2.990.
+        </div>
+        <button class="btn btn-accent" onclick="confirmFree()">Enviar petición →</button>
+        <button class="btn btn-outline" onclick="goStep(3)">← Volver</button>
+      </div>
+
+    </div>
+
+    <!-- STEP 5: Success -->
+    <div class="form-step" id="step5">
+      <div class="success-content">
+        <div class="success-icon" id="success-icon">🎉</div>
+        <div id="success-plan-badge-wrap"></div>
+        <h2 id="success-title">¡Petición registrada!</h2>
+        <p id="success-msg">Tu petición fue recibida. Si el show se concreta, te avisaremos por email.</p>
+        <div class="success-detail">
+          📧 Enviamos confirmación a <strong id="confirm-email"></strong> por el show de <strong id="confirm-artista"></strong> en <strong id="confirm-ciudad"></strong>.
+        </div>
+        <a href="index.html">
+          <button class="btn btn-accent">Pedir otro show</button>
+        </a>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<script>
+  // ── Configuración ──────────────────────────────────────────────
+  const STRIPE_PUBLISHABLE_KEY = 'pk_test_REEMPLAZAR_CON_TU_CLAVE';
+  const SUPABASE_FUNCTIONS_URL = 'https://REEMPLAZAR.supabase.co/functions/v1';
+  // ───────────────────────────────────────────────────────────────
+
+  const stripe = Stripe(STRIPE_PUBLISHABLE_KEY);
+  let elements = null;
+  let currentStep = 1;
+  let selectedPlan = 'premium';
+
+
+  function selectPlan(plan) {
+    selectedPlan = plan;
+    document.getElementById('plan-free').classList.toggle('selected', plan === 'free');
+    document.getElementById('plan-premium').classList.toggle('selected', plan === 'premium');
+
+    // RUT only needed for premium
+    document.getElementById('rut-field').style.display = plan === 'premium' ? 'block' : 'none';
+  }
+
+  function goStep(n) {
+    document.getElementById('step' + currentStep).classList.remove('active');
+    currentStep = n;
+    document.getElementById('step' + currentStep).classList.add('active');
+    for (let i = 1; i <= 4; i++) {
+      document.getElementById('dot' + i).classList.toggle('done', i <= currentStep);
+    }
+  }
+
+  function validate(ids) {
+    let ok = true;
+    ids.forEach(id => {
+      const el = document.getElementById(id);
+      if (!el || !el.value.trim()) {
+        if (el) el.classList.add('error');
+        ok = false;
+      } else {
+        el.classList.remove('error');
+      }
+    });
+    return ok;
+  }
+
+  function goStep2() {
+    goStep(2);
+  }
+
+  function goStep3() {
+    const fieldsToValidate = ['nombre', 'email'];
+    if (selectedPlan === 'premium') fieldsToValidate.push('rut');
+    if (!validate(fieldsToValidate)) return;
+    goStep(3);
+  }
+
+  function goStep4() {
+    if (!validate(['artista', 'ciudad'])) return;
+
+    const artista = document.getElementById('artista').value;
+    const ciudad = document.getElementById('ciudad').value;
+
+    if (selectedPlan === 'premium') {
+      document.getElementById('payment-section').style.display = 'block';
+      document.getElementById('free-confirm-section').style.display = 'none';
+      document.getElementById('resumen-artista').textContent = artista;
+      document.getElementById('resumen-ciudad').textContent = ciudad;
+    } else {
+      document.getElementById('payment-section').style.display = 'none';
+      document.getElementById('free-confirm-section').style.display = 'block';
+      document.getElementById('free-artista').textContent = artista;
+      document.getElementById('free-ciudad').textContent = ciudad;
+    }
+    goStep(4);
+    if (selectedPlan === 'premium') mountStripeElement();
+  }
+
+  // Monta Stripe Payment Element cuando llega al paso de pago
+  async function mountStripeElement() {
+    const nombre  = document.getElementById('nombre').value;
+    const email   = document.getElementById('email').value;
+    const rut     = document.getElementById('rut').value;
+    const artista = document.getElementById('artista').value;
+    const ciudad  = document.getElementById('ciudad').value;
+
+    try {
+      const res = await fetch(`${SUPABASE_FUNCTIONS_URL}/create-payment-intent`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nombre, email, rut, artista, ciudad }),
+      });
+      const { clientSecret, error } = await res.json();
+      if (error) throw new Error(error);
+
+      elements = stripe.elements({
+        clientSecret,
+        appearance: {
+          theme: 'night',
+          variables: {
+            colorPrimary: '#e8ff00',
+            colorBackground: '#1e1e1e',
+            colorText: '#f0f0f0',
+            borderRadius: '12px',
+          }
+        }
+      });
+      elements.create('payment').mount('#payment-element');
+    } catch (err) {
+      // En modo demo (sin credenciales), muestra el formulario simulado
+      document.getElementById('payment-element').innerHTML =
+        '<p style="color:var(--muted);font-size:0.82rem;padding:12px 0">⚠️ Modo demo — configura tus claves en form.html para activar Stripe real.</p>';
+    }
+  }
+
+  async function processPayment() {
+    const btn = document.getElementById('pay-btn');
+    const errorEl = document.getElementById('payment-error');
+    errorEl.style.display = 'none';
+    btn.textContent = 'Procesando...';
+    btn.disabled = true;
+
+    if (!elements) {
+      // Demo sin credenciales
+      setTimeout(() => showSuccess('premium'), 1500);
+      return;
+    }
+
+    const { error } = await stripe.confirmPayment({
+      elements,
+      confirmParams: { return_url: window.location.origin + '/success.html' },
+    });
+
+    if (error) {
+      errorEl.textContent = error.message;
+      errorEl.style.display = 'block';
+      btn.textContent = 'Pagar $2.990 →';
+      btn.disabled = false;
+    }
+    // Si pago OK, Stripe redirige a success.html automáticamente
+  }
+
+  function confirmFree() {
+    showSuccess('free');
+  }
+
+  function showSuccess(plan) {
+    document.getElementById('confirm-email').textContent = document.getElementById('email').value;
+    document.getElementById('confirm-artista').textContent = document.getElementById('artista').value;
+    document.getElementById('confirm-ciudad').textContent = document.getElementById('ciudad').value;
+
+    if (plan === 'premium') {
+      document.getElementById('success-icon').textContent = '🎉';
+      document.getElementById('success-plan-badge-wrap').innerHTML = '<div class="success-plan-badge">⭐ Plan Premium activado</div>';
+      document.getElementById('success-title').textContent = '¡Petición Premium registrada!';
+      document.getElementById('success-msg').textContent = 'Eres de los primeros en acceder a la preventa si el show se concreta. Te avisaremos por email.';
+    } else {
+      document.getElementById('success-icon').textContent = '✅';
+      document.getElementById('success-plan-badge-wrap').innerHTML = '';
+      document.getElementById('success-title').textContent = '¡Petición registrada!';
+      document.getElementById('success-msg').textContent = 'Tu petición fue recibida. Si el show se concreta, te avisaremos por email.';
+    }
+    goStep(5);
+  }
+
+  // Init — respect URL params for plan, artista, ciudad
+  (function init() {
+    const params = new URLSearchParams(window.location.search);
+    const artista = params.get('artista');
+    const ciudad = params.get('ciudad');
+    const plan = params.get('plan');
+    if (artista) { const el = document.getElementById('artista'); if (el) el.value = artista; }
+    if (ciudad)  { const el = document.getElementById('ciudad');  if (el) el.value = ciudad;  }
+    selectPlan((plan === 'free' || plan === 'premium') ? plan : 'premium');
+  })();
+</script>
+
+</body>
+</html>
