@@ -246,7 +246,7 @@
         <input type="email" id="email" placeholder="tu@email.com" />
         <div class="field-error">Ingresa un email válido</div>
       </div>
-      <button class="btn btn-accent" style="margin-top:8px" onclick="goStep2()">Continuar →</button>
+      <button type="button" class="btn btn-accent" style="margin-top:8px" onclick="goStep2()">Continuar →</button>
     </div>
 
     <!-- STEP 2: Ciudad -->
@@ -274,7 +274,7 @@
         </select>
         <div class="field-error">Selecciona tu ciudad</div>
       </div>
-      <button class="btn btn-accent" onclick="goStep3()">Continuar →</button>
+      <button type="button" class="btn btn-accent" onclick="goStep3()">Continuar →</button>
       <button class="btn btn-outline" onclick="goStep(1)">← Volver</button>
     </div>
 
@@ -315,7 +315,7 @@
         <div class="field-hint">Para validar tu acceso a preventa en la ticketera</div>
         <div class="field-error">Ingresa tu RUT</div>
       </div>
-      <button class="btn btn-accent" style="margin-top:20px" onclick="goStep4()">Continuar →</button>
+      <button type="button" class="btn btn-accent" style="margin-top:20px" onclick="goStep4()">Continuar →</button>
       <button class="btn btn-outline" onclick="goStep(2)">← Volver</button>
     </div>
 
@@ -415,8 +415,8 @@
 </main>
 
 <script>
-  const MP_PUBLIC_KEY = 'APP_USR-054effb9-5691-4ec2-a27a-c56ca01f0ec6';
-  const MP_BACKEND_URL = 'REEMPLAZAR_CON_URL_BACKEND'; // Supabase Edge Function
+  const MP_PUBLIC_KEY = 'TEST-a4aeadbc-b61b-417f-ab07-04a9f2cf4840';
+  const MP_BACKEND_URL = 'https://toujrgppsfkuftkcnrla.supabase.co/functions/v1';
 
   let currentStep = 1;
   let selectedPlan = 'premium';
@@ -442,9 +442,31 @@
     let ok = true;
     ids.forEach(id => {
       const el = document.getElementById(id);
-      if (!el || !el.value.trim()) { if (el) el.classList.add('error'); ok = false; }
-      else el.classList.remove('error');
+      if (!el || !el.value.trim()) {
+        if (el) {
+          el.classList.add('error');
+          el.style.borderColor = '#ff4d4d';
+          el.style.boxShadow = '0 0 0 2px rgba(255,77,77,0.3)';
+          el.placeholder = '⚠ Este campo es obligatorio';
+        }
+        ok = false;
+      } else {
+        el.classList.remove('error');
+        el.style.borderColor = '';
+        el.style.boxShadow = '';
+      }
     });
+    if (!ok) {
+      const active = document.querySelector('.form-step.active');
+      let msg = active.querySelector('.validate-msg');
+      if (!msg) {
+        msg = document.createElement('div');
+        msg.className = 'validate-msg';
+        msg.style.cssText = 'color:#ff4d4d;font-size:0.82rem;margin-top:10px;padding:10px;background:rgba(255,77,77,0.08);border-radius:8px;text-align:center;';
+        active.querySelector('button.btn-accent').before(msg);
+      }
+      msg.textContent = '⚠ Por favor completa todos los campos obligatorios.';
+    }
     return ok;
   }
 
@@ -486,11 +508,10 @@
   }
 
   function mountMercadoPago() {
-    if (mpCardForm) return; // ya montado
+    if (mpCardForm) return;
     if (!window.MercadoPago || MP_PUBLIC_KEY.includes('REEMPLAZAR')) {
-      // Modo demo
       document.getElementById('form-checkout__cardNumber').innerHTML =
-        '<div style="padding:12px;font-size:0.8rem;color:var(--muted)">🔑 Configura tu Public Key de MercadoPago para activar el pago real.</div>';
+        '<div style="padding:12px;font-size:0.8rem;color:var(--muted)">🔑 Configura tu Public Key de MercadoPago.</div>';
       return;
     }
     const mp = new MercadoPago(MP_PUBLIC_KEY, { locale: 'es-CL' });
@@ -499,21 +520,37 @@
       iframe: true,
       form: {
         id: 'form-checkout',
-        cardNumber:         { id: 'form-checkout__cardNumber',         placeholder: '0000 0000 0000 0000' },
-        expirationDate:     { id: 'form-checkout__expirationDate',     placeholder: 'MM/AA' },
-        securityCode:       { id: 'form-checkout__securityCode',       placeholder: 'CVV' },
-        cardholderName:     { id: 'form-checkout__cardholderName' },
-        issuer:             { id: 'form-checkout__issuer' },
-        installments:       { id: 'form-checkout__installments' },
-        identificationType: { id: 'form-checkout__identificationType' },
+        cardNumber:           { id: 'form-checkout__cardNumber',           placeholder: '0000 0000 0000 0000' },
+        expirationDate:       { id: 'form-checkout__expirationDate',       placeholder: 'MM/AA' },
+        securityCode:         { id: 'form-checkout__securityCode',         placeholder: 'CVV' },
+        cardholderName:       { id: 'form-checkout__cardholderName' },
+        issuer:               { id: 'form-checkout__issuer' },
+        installments:         { id: 'form-checkout__installments' },
+        identificationType:   { id: 'form-checkout__identificationType' },
         identificationNumber: { id: 'form-checkout__identificationNumber' },
       },
       callbacks: {
-        onFormMounted: (err) => { if (err) console.warn('MP form error:', err); },
+        onFormMounted: (err) => {
+          if (err) {
+            console.warn('MP mount error:', err);
+            showPayError('Error al cargar el formulario de pago. Recarga la página.');
+          }
+        },
         onSubmit: handleMPSubmit,
+        onError: (err) => {
+          console.error('MP error:', err);
+          const btn = document.getElementById('mp-pay-btn');
+          if (btn) { btn.textContent = 'Pagar $2.990 →'; btn.disabled = false; }
+          showPayError('Error en la tarjeta: ' + (err?.message || JSON.stringify(err)));
+        },
         onFetchingResource: () => {},
       },
     });
+  }
+
+  function showPayError(msg) {
+    const errorEl = document.getElementById('mp-error');
+    if (errorEl) { errorEl.textContent = '⚠️ ' + msg; errorEl.style.display = 'block'; }
   }
 
   async function handleMPSubmit(event) {
@@ -522,30 +559,47 @@
     const errorEl = document.getElementById('mp-error');
     btn.textContent = 'Procesando...';
     btn.disabled = true;
-    errorEl.style.display = 'none';
-
-    const { token, issuerId, paymentMethodId, installments, identificationNumber, identificationType } = mpCardForm.getCardFormData();
-    const email = document.getElementById('email').value.trim();
-    const nombre = document.getElementById('nombre').value.trim();
-    const ciudad = document.getElementById('ciudad').value;
-    const rut = document.getElementById('rut').value.trim();
+    if (errorEl) errorEl.style.display = 'none';
 
     try {
+      const formData = mpCardForm.getCardFormData();
+      const { token, issuerId, paymentMethodId, installments, identificationNumber, identificationType } = formData;
+
+      if (!token) {
+        throw new Error('No se pudo generar el token de tarjeta. Verifica los datos ingresados.');
+      }
+
+      const email  = document.getElementById('email').value.trim();
+      const nombre = document.getElementById('nombre').value.trim();
+      const ciudad = document.getElementById('ciudad').value;
+      const rut    = document.getElementById('rut').value.trim();
+
       const res = await fetch(MP_BACKEND_URL + '/process-payment-mp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token, issuerId, paymentMethodId, installments, identificationNumber, identificationType, email, nombre, ciudad, rut, amount: 2990 })
+        body: JSON.stringify({
+          token,
+          issuer_id: issuerId,
+          payment_method_id: paymentMethodId,
+          installments,
+          identificationNumber,
+          identificationType,
+          email, nombre, ciudad, rut,
+          artista: 'Pamela Leiva',
+          monto: 2990
+        })
       });
+
       const data = await res.json();
-      if (data.status === 'approved') {
+
+      if (['approved', 'in_process', 'pending'].includes(data.status)) {
         await submitToJotform('premium');
         showSuccess('premium');
       } else {
-        throw new Error(data.status_detail || 'Pago rechazado');
+        throw new Error(data.detail || data.error || 'Pago rechazado: ' + (data.status || 'error desconocido'));
       }
     } catch (e) {
-      errorEl.textContent = '⚠️ ' + (e.message || 'Error al procesar el pago. Intenta nuevamente.');
-      errorEl.style.display = 'block';
+      showPayError(e.message || 'Error al procesar el pago. Intenta nuevamente.');
       btn.textContent = 'Pagar $2.990 →';
       btn.disabled = false;
     }
@@ -553,7 +607,10 @@
 
   function submitPayment(e) {
     e.preventDefault();
-    if (!mpCardForm) return;
+    if (!mpCardForm) { showPayError('Formulario no listo, espera un momento.'); return; }
+    const btn = document.getElementById('mp-pay-btn');
+    btn.textContent = 'Procesando...';
+    btn.disabled = true;
     mpCardForm.submit();
   }
 
