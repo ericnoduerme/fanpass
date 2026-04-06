@@ -25,14 +25,14 @@
     main { flex: 1; display: grid; grid-template-columns: 1fr 1fr; max-width: 1000px; margin: 60px auto; width: 100%; padding: 0 24px; gap: 80px; align-items: start; }
 
     /* LEFT — ARTIST INFO */
-    .artist-info { padding-top: 8px; }
+    .artist-info { padding-top: 8px; text-align: center; }
 
     .artist-avatar {
       width: 88px; height: 88px; border-radius: 50%;
       border: 3px solid var(--accent);
       background: var(--surface2);
       display: flex; align-items: center; justify-content: center;
-      font-size: 40px; margin-bottom: 20px;
+      font-size: 40px; margin: 0 auto 20px auto;
       position: relative; overflow: hidden;
     }
     .artist-avatar img { width: 100%; height: 100%; object-fit: cover; }
@@ -49,7 +49,7 @@
     .artist-info h1 { font-size: 2.4rem; font-weight: 900; letter-spacing: -1.5px; line-height: 1.05; margin-bottom: 12px; }
     .artist-bio { color: var(--muted); font-size: 0.92rem; line-height: 1.7; margin-bottom: 28px; }
 
-    .artist-stats { display: flex; gap: 24px; margin-bottom: 28px; flex-wrap: wrap; }
+    .artist-stats { display: flex; gap: 24px; margin-bottom: 28px; flex-wrap: wrap; justify-content: center; }
     .astat { text-align: center; }
     .astat-n { font-size: 1.5rem; font-weight: 900; color: var(--accent); }
     .astat-l { font-size: 0.72rem; color: var(--muted); margin-top: 2px; }
@@ -196,10 +196,13 @@
     <h1>Pamela Leiva</h1>
     <p class="artist-bio">Pamela Leiva puentealtina, comediante, actriz y cantante ha demostrado ser una narradora de historias, una observadora aguda de la vida cotidiana y una maestra del humor. Con su estilo único y su carisma innegable, Pamela ha conquistado los escenarios de todo Chile llevando risas y alegría de Arica a Punta Arenas.</p>
 
-    <div class="artist-quote">
-      <span class="quote-mark">"</span>
-      <p class="quote-text">Si quieres verme en tu ciudad, este es el lugar. Pide tu show — yo veo cada petición.</p>
-      <span class="quote-author">— Pamela Leiva</span>
+    <div style="display:flex;gap:10px;margin:16px 0;flex-wrap:wrap;justify-content:center;">
+      <a href="https://pamelaleiva.cl/" target="_blank" rel="noopener" style="display:flex;align-items:center;gap:6px;background:#1a1a1a;border:1px solid #2a2a2a;border-radius:20px;padding:7px 14px;color:#ccc;text-decoration:none;font-size:0.82rem;transition:border-color 0.2s;" onmouseover="this.style.borderColor='#e8ff00'" onmouseout="this.style.borderColor='#2a2a2a'">
+        🌐 pamelaleiva.cl
+      </a>
+      <a href="https://www.instagram.com/pameleiva/" target="_blank" rel="noopener" style="display:flex;align-items:center;gap:6px;background:#1a1a1a;border:1px solid #2a2a2a;border-radius:20px;padding:7px 14px;color:#ccc;text-decoration:none;font-size:0.82rem;transition:border-color 0.2s;" onmouseover="this.style.borderColor='#e8ff00'" onmouseout="this.style.borderColor='#2a2a2a'">
+        📸 @pameleiva
+      </a>
     </div>
 
     <div class="artist-stats">
@@ -306,6 +309,7 @@
             <div class="perk active"><span class="perk-icon">✓</span> Acceso exclusivo a preventa</div>
             <div class="perk active"><span class="perk-icon">✓</span> Tu petición tiene peso real</div>
             <div class="perk active"><span class="perk-icon">✓</span> Pago se toma como abono a entrada</div>
+            <div class="perk active"><span class="perk-icon">✓</span> Eres Fan Oficial de Pamela Leiva</div>
           </div>
         </div>
       </div>
@@ -653,9 +657,9 @@
     document.getElementById('confirm-ciudad').textContent = ciudad;
     if (plan === 'premium') {
       document.getElementById('success-icon').textContent = '🎉';
-      document.getElementById('success-plan-badge-wrap').innerHTML = '<div class="success-plan-badge">⭐ Plan Premium</div>';
-      document.getElementById('success-title').textContent = '¡Petición Premium registrada!';
-      document.getElementById('success-msg').textContent = 'Pago confirmado. Te avisaremos cuando el show se confirme y tendrás acceso a preventa exclusiva.';
+      document.getElementById('success-plan-badge-wrap').innerHTML = '<div class="success-plan-badge">⭐ Plan Premium</div><div style="display:inline-block;background:#e8ff00;color:#000;font-weight:800;font-size:0.8rem;padding:5px 14px;border-radius:20px;letter-spacing:0.5px;margin:8px 0 4px">🏅 FAN OFICIAL DE PAMELA LEIVA</div>';
+      document.getElementById('success-title').textContent = '¡Ya eres Fan Oficial!';
+      document.getElementById('success-msg').textContent = 'Pago confirmado. Tendrás acceso exclusivo a preventa cuando el show se confirme.';
     } else {
       document.getElementById('success-icon').textContent = '✅';
       document.getElementById('success-plan-badge-wrap').innerHTML = '';
