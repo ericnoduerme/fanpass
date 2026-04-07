@@ -283,8 +283,8 @@
 
     <!-- STEP 3: Elige plan -->
     <div class="form-step" id="step3">
-      <h2>¿Cómo quieres pedir?</h2>
-      <p class="subtitle">Casi listo — elige cómo registrar tu petición.</p>
+      <h2>¿Cómo quieres participar?</h2>
+      <p class="subtitle">El pago Premium es un abono a tu entrada — no es un costo extra.</p>
       <div class="plan-options">
         <div class="plan-option" id="plan-free" onclick="selectPlan('free')">
           <div class="plan-header">
@@ -301,14 +301,14 @@
           <div class="plan-badge">⭐ Premium</div>
           <div class="plan-header">
             <span class="plan-name">Premium</span>
-            <span class="plan-price paid">$2.990</span>
+            <span class="plan-price paid">$2.990 <span style="font-size:0.6rem;font-weight:600;color:var(--muted);display:block;line-height:1.2;margin-top:2px;">abono a tu entrada</span></span>
           </div>
           <div class="plan-perks">
             <div class="perk active"><span class="perk-icon">✓</span> Registra tu petición</div>
             <div class="perk active"><span class="perk-icon">✓</span> Notificación si el show se confirma</div>
             <div class="perk active"><span class="perk-icon">✓</span> Acceso exclusivo a preventa</div>
             <div class="perk active"><span class="perk-icon">✓</span> Tu petición tiene peso real</div>
-            <div class="perk active"><span class="perk-icon">✓</span> Pago se toma como abono a entrada</div>
+            <div class="perk active"><span class="perk-icon">✓</span> Los $2.990 se descuentan de tu entrada</div>
             <div class="perk active"><span class="perk-icon">✓</span> Eres Fan Oficial de Pamela Leiva</div>
           </div>
         </div>
@@ -338,7 +338,7 @@
         </div>
       </div>
       <div style="background:rgba(232,255,0,0.04);border:1px solid rgba(232,255,0,0.15);border-radius:var(--radius);padding:14px;margin-bottom:20px;font-size:0.82rem;color:var(--muted);line-height:1.6;">
-        ⭐ Actualiza a <strong style="color:var(--text)">Premium $2.990</strong> y obtén acceso exclusivo a preventa.
+        ⭐ Pasa a <strong style="color:var(--text)">Premium</strong>: los <strong style="color:var(--accent)">$2.990 se descuentan de tu entrada</strong>. No es un costo extra — es tu reserva de preventa.
       </div>
       <button class="btn btn-accent" id="submit-free-btn" onclick="submitFree()">Enviar petición →</button>
       <button class="btn btn-outline" onclick="goStep(3)">← Volver</button>
@@ -346,13 +346,13 @@
 
     <!-- STEP 4b: Pago Premium con MercadoPago -->
     <div class="form-step" id="step4-premium">
-      <h2>Paga tu petición</h2>
-      <p class="subtitle">Pago seguro · No reembolsable</p>
+      <h2>Reserva tu lugar en preventa</h2>
+      <p class="subtitle">Los $2.990 se abonan a tu entrada cuando el show se confirme</p>
 
       <div style="background:var(--surface2);border-radius:var(--radius);padding:16px 20px;margin-bottom:20px;display:flex;justify-content:space-between;align-items:center;">
         <div>
           <div style="font-weight:700;font-size:0.95rem;">Pamela Leiva · <span id="mp-ciudad">—</span></div>
-          <div style="font-size:0.78rem;color:var(--muted);margin-top:2px;">⭐ Plan Premium · Acceso a preventa</div>
+          <div style="font-size:0.78rem;color:var(--muted);margin-top:2px;">⭐ Fan Oficial · Abono garantizado a tu entrada</div>
         </div>
         <div style="font-size:1.4rem;font-weight:900;color:var(--accent);">$2.990</div>
       </div>
@@ -659,7 +659,7 @@
       document.getElementById('success-icon').textContent = '🎉';
       document.getElementById('success-plan-badge-wrap').innerHTML = '<div class="success-plan-badge">⭐ Plan Premium</div><div style="display:inline-block;background:#e8ff00;color:#000;font-weight:800;font-size:0.8rem;padding:5px 14px;border-radius:20px;letter-spacing:0.5px;margin:8px 0 4px">🏅 FAN OFICIAL DE PAMELA LEIVA</div>';
       document.getElementById('success-title').textContent = '¡Ya eres Fan Oficial!';
-      document.getElementById('success-msg').textContent = 'Pago confirmado. Tendrás acceso exclusivo a preventa cuando el show se confirme.';
+      document.getElementById('success-msg').textContent = 'Tus $2.990 quedan abonados a tu entrada. Cuando el show se confirme, tendrás acceso exclusivo a preventa y ese monto se descuenta de tu ticket.';
     } else {
       document.getElementById('success-icon').textContent = '✅';
       document.getElementById('success-plan-badge-wrap').innerHTML = '';

@@ -84,7 +84,8 @@
     .section { max-width: 900px; margin: 0 auto; padding: 64px 24px; }
     .section-title { font-size: 2rem; font-weight: 900; letter-spacing: -1px; margin-bottom: 8px; }
     .section-sub { color: var(--muted); margin-bottom: 48px; }
-    .steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 24px; }
+    .steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+    @media (max-width: 768px) { .steps { grid-template-columns: repeat(2, 1fr); gap: 12px; } }
     .step-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 28px; }
     .step-num { width: 36px; height: 36px; background: rgba(232,255,0,0.12); border: 1px solid rgba(232,255,0,0.3); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.85rem; font-weight: 800; color: var(--accent); margin-bottom: 16px; }
     .step-card h3 { font-size: 1rem; font-weight: 700; margin-bottom: 8px; }
@@ -169,12 +170,7 @@
 
     <div class="hero-cta">
       <a href="form.html" class="btn-hero">🎤 Hacer mi petición</a>
-      <span class="hero-hint">Desde <strong>gratis</strong> · Premium con preventa exclusiva desde <strong>$2.990</strong></span>
-      <div class="trust-row">
-        <span class="trust-item">🔒 Pago seguro</span>
-        <span class="trust-item">✉️ Sin spam</span>
-        <span class="trust-item">📊 Datos reales a productoras</span>
-      </div>
+
     </div>
   </section>
 
